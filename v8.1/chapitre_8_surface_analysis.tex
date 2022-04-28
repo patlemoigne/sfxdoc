@@ -1,0 +1,75 @@
+\chapter{Surface Offline Data Assimilation}
+\minitoc
+%=========================
+\bibliographystyle{plain}
+%=========================
+
+\section{Introduction}
+SURFEX Offline Data Assimilation (SODA) is the first implementation of a unified assimilation in SURFEX. The present description is based on the offline version from SURFEX v.8. It is assumed that this version is currently running on your computer, if not, the first step is to install such version before trying to use the SODA scheme. SODA permits the land surface analysis of screen level parameters, soil moisture and vegetation. The screen level analysis relies on a two-dimensional Optimal Interpolation (2D-OI). The soil moisture and/or vegetation analysis rely either on a simplified Extended Kalman Filter or an Ensemble Kalman Filter (EnKF).
+
+\section{Source code - creation of the binary}
+SODA is available under the directory \$SURFEX\_EXPORT/src/ASSIM. Main file is {\bf soda.F90} that performs the various steps of the assimilation : definition of initial perturbed states, reading of fields from SURFEX outputs, writing of fields necessary for the analysis, and finally the surface analysis. The latter being executed by either {\bf assim\_nature\_isba\_oi.F90}, {\bf assim\_nature\_isba\_ekf.F90} or {\bf assim\_nature\_isba\_enkf.F90}.
+
+\section{Optimal Interpolation soil moisture analysis}
+{\large {\bf Methodology}} \\
+This soil analysis scheme is based on an “local” optimum interpolation technique as described in Mahfouf (1991)\nocite{mahfouf_1991}, Giard and Bazile (2000)\nocite{giard_bazile_00}. The analysis increments from the screen-level analysis (2-meter temperature, $T_2m$ and relative humidity, $RH_2m$) are used to produce increments for the water content given by: \\
+\begin{equation}
+\Delta w_{s} = \alpha_s^T  \Delta T_{2m} + \alpha_s^{RH} \Delta RH_{2m}
+\end{equation}
+and
+\begin{equation}
+\Delta w_{p} = \alpha_p^T  \Delta T_{2m} + \alpha_p^{RH} \Delta RH_{2m}
+\end{equation}
+
+for the superficial volumetric and mean volumetric water content, respectively. The coefficients $\alpha_p^T$ and $\alpha_p^{RH}$ depend on soil texture, increasing as the standard range of variation of soil moisture $\delta w = \delta w_{fc} - \delta w_{wilt}$ (soil water content at field capacity and wilting point, respectively).
+
+\section{Extended Kalman Filter soil moisture and vegetation analysis}
+{\large {\bf Methodology}} \\
+The EKF soil moisture analysis used in {\bf SODA} is a point wise data assimilation scheme (Mahfouf \etal (2009)\nocite{mahfouf_2009}, Barbu \etal (2011, 2014)\nocite{barbu_2011} \nocite{barbu_2014}, Fairbairn \etal (2017)\nocite{fairbairn_2017}, Albergel \etal (2017)\nocite{albergel_2017}). The analysis update equation of the EKF is: \\
+\begin{equation}
+x_a(t_i) = x_f(t_i)+K_i(y_0(t_i)-h_i[x_f])
+\end{equation}
+
+The $a$, $f$ and $o$ subscripts stand for analysis, forecast and observation, respectively. $x$ is the control vector of dimension $N_x$, computed at time $t_i$, that represents the prognostic equations of the LSM {\it $M$}.
+
+$y_o$ is the observation vector of dimension $N_y$. The Kalman gain matrix $K_i$ is computed at time $t_i$ as: \\
+\begin{equation} \label{eq2}
+K_i = BH^T (HBH^T+R)^{-1}
+\end{equation}
+
+A non-linear observation operator $h$, enables the extraction of the model counterpart of the observations: \\
+\begin{equation}
+y(t_i) = h(x)
+\end{equation}
+
+$B$ and $R$ are error covariance matrices characterising the forecast and observations vectors. The cross-correlated terms represent covariances. The operator $H$ (and its transpose $H^T$) from \ref{eq2} is the Jacobian matrix: the linearized version of the observation operator (defined as $N_y$ rows and $N_x$ columns) that transforms the model states into the observations space. A numerical estimation of each Jacobian element is calculated by finite differences, by perturbing each component $x_j$ of the control vector $x$ by a specific amount $\delta x_j$ resulting in a column of the matrix $H$ for each integration $m$: 
+
+\begin{equation}
+H_{mj} = \frac{\partial {y}_m}{\partial {x}_j} \approx \frac{ {y}_m(x+\delta x_j)-y_m}{ \delta {x}_j}
+\end{equation}
+
+The background error covariance matrix undergoes an analogous forecast and analysis cycle:
+
+\begin{equation} \label{eq5}
+B_f(t_i) = M(t_{i-1}) B_a(t_{i-1}) M^T(t_{i-1}) + Q
+\end{equation}
+
+\begin{equation} \label{eq6}
+B_a(t_i) = (I-K(t_i)H(t_i)) B_a(t_{i})
+\end{equation}
+
+In the forecast step (equation \ref{eq5}), the previous analysis, $B_a (t_{i-1})$, is forecast forward in time by the tangent linear of the state forecast model $M$, and the forecast error covariance matrix $Q$, is added to account for errors in the model forecast, giving the background error matrix forecast $B_f (t_i)$. The model state analysis decreases the model error, and $B$ is reduced by an analysis step (equation \ref{eq6}). The linearization of $M$ is obtained by the same finite difference method used for $H$.
+The control vector evolution from time $t_i$ to time $t_{i+1}$ is then controlled by the following equation:
+
+
+\begin{equation} \label{eq7}
+x_f(t_{i+1}) = M_i[x_a(t_{i})]
+\end{equation}
+
+\section{Ensemble Kalman Filter soil moisture and vegetation analysis}
+
+Although an EnKf analysis is available within SODA (Fairbairn \etal (2015)\nocite{fairbairn_2015}), it is still in consolidation phase.
+
+%====================
+\bibliography{surfex_scidoc}
+%====================
