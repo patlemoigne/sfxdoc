@@ -1,0 +1,59 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CONTRIBUTION TO THE SURFEX BOOK1: "Surface Processes Scheme"
+% Author        : P. Le Moigne
+% Original      : January 05, 2009
+% Last Update   : January 05, 2009
+% Last Update   : May     06, 2009
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introduction: a brief description of the SURFEX system}
+\minitoc
+%=========================
+\bibliographystyle{plain}
+%=========================
+
+%{by P. Le Moigne}
+
+Surface modelling in numerical weather prediction has always held an important place in the activities of the Centre National de Recherches M\'et\'eorologiques (CNRM hereafter). In the late 80's, Isba (Noilhan and Planton~(1989)\nocite{Noilhan1989}; Mahfouf and Noilhan~(1996)\nocite{Mahfouf1996}), a soil vegetation atmosphere transfer scheme (Interaction between Soil Biosphere and Atmosphere) has been developed and it aimed to better simulate the exchanges of energy and water between the land surface and the atmosphere just above. Isba model has been designed to be simple and efficient in order to be put into operations at M\'et\'eo-France. Isba scheme computes the exchanges of energy and water between  the continuum soil-vegetation-snow and the atmosphere above. In its genuine version, the evapotranspiration of the vegetation is controlled by a  resistance like proposed by Jarvis (1976)\nocite{Jarvis1976}
+. A more recent version of the model named Isba-A-gs (Calvet \etal (1998)\nocite{Calvet1998})
+ accounts for a simplified photosynthesis model where the evaporation is controlled by the aperture of the stomates, the component of the leaves that regulates the balance between the transpiration and the assimilation of CO2. Nowadays, Isba land surface scheme is used in the French operational and research forecast models. Thanks to the efforts made by the research community at CNRM, French numerical weather prediction models have always been at the forefront of research in terms of surface modelling. More recently, the modelling of urban areas has began to be of great interest in the research community. In 2000, TEB (Town Energy Balance) model, specially designed to represent the exchanges between a town and the atmosphere has enabled advanced studies in this direction (Masson (2000)\nocite{Masson2000}). The TEB model is based on the canyon concept, where a town is represented with a roof, a road and two facing walls with characteristics playing a key role in the town energy budget. More especially, the ability, of the canyon to trap a fraction of the incoming solar and infrared radiation is taken into account in the model.
+A special effort has been made this last years to externalize the surface scheme from the embedded surface-atmosphere Meso-NH model. The main idea was to gather all the developments and improvements made in surface schemes in order to make them available for as many people as possible. Not only physical parameterizations have been externalized, but also the preparation of specific surface parameters needed by physical schemes and the initialization of all state variables of the different models: SURFEX (stands for surface externalis\'{e}e) system was born. 
+Moreover, the surface representation has been improved and thus Surfex system has been enhanced with the specific treatment for water surfaces. Indeed, up to now, the exchanges of energy between water surfaces and the atmosphere were treated in a very simple way, while now a physically based model have been introduced to build a more complex but accurate surface model, available for all atmospheric models. There are two possibilities to compute fluxes over marine surfaces. The simplest one consists in using Charnock's approach to compute the roughness length and fluxes with a constant water surface temperature. Secondly, a one-dimensional ocean mixing layer model has been introduced (Lebeaupin (2007)\nocite{lebeaupin2007})
+ in order to simulate more accurately the sea surface temperature (SST hereafter) and the fluxes at the sea/air interface. This model based on Gaspar (1990)\nocite{Gaspar1990}
+, will be very helpful especially at meso-scale to better represent diurnal cycle of SST. 
+At meso-scale, a good representation of lakes is of great interest especially for Northern countries. In order to  improve the treatment of lake areas, the simple but robust Flake model (Mironov (2010)\nocite{mironov2010}) has been implemented within Surfex system. It allows to have an evolving lake surface temperature and a good description of the energy exchanges within water.
+
+\begin{figure}[h]
+\hspace*{2.cm}
+\psfig{figure=\EPSDIR/dessin-3.eps2,width=12cm}
+\caption{ Description of the exchanges between an atmospheric model sending meteorological and radiative fields to the surface and Surfex composed of a set of physical models that compute tiled variables $\mathcal{F}_{*}$ covering a fraction f$_{*}$ of a unitary grid box and an interface where the averaged variables $\mathcal{F}$ are sent back to the atmosphere \label{surf1}}
+\end{figure}
+
+%\begin{figure}[h]
+%\hspace*{2.cm}
+%\psfig{figure=\EPSDIR/4flux.eps,width=12cm}
+%\caption{Partitioning of the SURFEX grid box, and corresponding turbulent fluxes.
+%F stands either for M (momentum flux), H (sensible heat flux), LE (latent heat flux),
+%$S^\uparrow$ (the reflected solar radiation) or $L^\uparrow$ (the
+%upward longwave radiation).
+%\label{surf1}}
+%\end{figure}
+
+%\begin{displaymath}
+%\begin{array}{lclclclcl}
+%M &= & M_{sea} & + & M_{water} & + & M_{town} & + & M_{nature} \\
+%H &= & H_{sea} & + & H_{water} & + & H_{town} & + & H_{nature} \\
+%LE &= & LE_{sea} & + & LE_{water} & + & LE_{town} & + & LE_{nature} \\
+%S^\uparrow &= & S^\uparrow_{sea} & + & S^\uparrow_{water} & + & S^\uparrow_{town} & + & S^\uparrow_{nature} \\
+%L^\uparrow &= & L^\uparrow_{sea} & + & L^\uparrow_{water} & + & L^\uparrow_{town} & + & L^\uparrow_{nature} \\
+%\end{array}
+%\end{displaymath}
+
+In Surfex, the exchanges between the surface and the atmosphere are realized by mean of a standardized interface (Polcher \etal (1998)\nocite{Polcher1998}; Best \etal (2004)\nocite{Best2004}) that proposes a generalized coupling between the atmosphere and surface. During a model time step, each surface grid box receives the upper air temperature, specific humidity, horizontal wind components, pressure, total precipitation, long-wave radiation, short-wave direct and diffuse radiations and possibly concentrations of chemical species and dust. In return, Surfex computes averaged fluxes for momentum, sensible and latent heat and possibly chemical species and dust fluxes and then sends these quantities back to the atmosphere with the addition of radiative terms like surface temperature, surface direct and diffuse albedo and also surface emissivity.
+
+All this information is then used as lower boundary conditions for the atmospheric radiation and turbulent schemes. In Surfex, each grid box is made of four adjacent surfaces: one for nature, one for urban areas, one for sea or ocean and one for lake. The coverage of each of these surfaces is known through the global ECOCLIMAP database (Masson \etal (2003)\nocite{masson_2003})
+, which combines land cover maps and satellite information. The Surfex fluxes are the average of the fluxes computed over nature, town, sea/ocean or lake, weighted by their respective fraction.
+
+%====================
+\bibliography{surfex_scidoc}
+%====================
