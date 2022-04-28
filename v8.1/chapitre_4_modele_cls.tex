@@ -1,0 +1,275 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CONTRIBUTION TO THE SURFEX BOOK1: "Surface Processes Scheme"
+% Author        : P. Le Moigne
+% Original      : January 05, 2009
+% Last Update   : January 05, 2009
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\chapter{Surface boundary layer scheme}\label{SBL}
+\minitoc
+%=========================
+\bibliographystyle{plain}
+%=========================
+
+
+\section{Introduction}
+
+Surface atmosphere exchanges, mainly momentum, water and heat surface fluxes, drive the boundary layer evolution, and influence the formation of low level clouds and more generally the synoptic flows and climate system. The modelling of these fluxes is performed by specific surface schemes: Soil-Vegetation-Atmosphere Transfer (SVATs) schemes for vegetation (Chen \etal (1997)\nocite{Chen1997} review the vegetation schemes used in the intercomparison exercice on Cabauw grass site), urban schemes for cities (see a review in Masson (2006)\nocite{Masson2006}), or schemes dedicated to sea or ice surfaces. The degree of complexity of these schemes is wide. The simplest models are bucket models (e.g. Manabe (1969)\nocite{Manabe1969}, Robock \etal (1995)\nocite{Robock1995}), with only one water reservoir in the soil. Next are the so-called big leaf models (Deardorff (1978), Noilhan and Planton (1989)\nocite{Noilhan1989} with only one surface energy balance and no canopy. The more detailed schemes have several layers in the soil, several energy budgets (low vegetations, snow and tree canopy) and photosynthesis production to simulate the carbon cycle (see Simon \etal (2005)\nocite{Simon2005}). The same degree of variability exists in the complexity of the physical processes described in urban schemes (see Masson (2006)).
+
+However, the present paper will not discuss on the complexity of the physical and physiological processes of the soil or plants in these schemes. The topic of this paper is to discuss the coupling of surface schemes to atmospheric models. Independantly of the complexity of the processes, two coupling methods are usually used (fig \ref{fig1}):
+
+\begin{itemize}
+\item single-layer coupled schemes: these surface schemes are forced by only one atmospheric layer (i.e. the lowest atmospheric layer of an atmospheric model, as in fig \ref{fig1}b). The surface schemes respond to atmospheric variables at this level (temperature, wind, humidity, incoming radiation, etc...) and they produce averaged upwards turbulent fluxes and radiative quantities (albedo, emissivity, surface temperature). Note that this level is physically supposed to be high enough above the surface to be in the inertial sublayer (or constant flux layer), most schemes using Monin-Obukhov theory to parameterize turbulent fluxes. These exchanges have been normalized in the Assistance for Land-surface Modelling activities (ALMA) norm (see Best \etal (2004)\nocite{Best2004} and Polcher \etal (1998)\nocite{Polcher1998}).\\
+ Because of the simplicity of this type of coupling, these surface schemes can be used off-line (e.g. forced directly by observations), so that they can be used for a wide range of applications (e.g. hydrology). All schemes presented in the offline intercomparison by Chen \etal (1997)\nocite{Chen1997} are single-layer schemes. These schemes can have a separate modelling  of the soil and of the canopy, but the coupling with the atmosphere is always done at a forcing level above the canopy. The link between the forcing level and the soil/canopy to compute energy fluxes is usually done using systems of aerodynamical/stomatal resistances (as in Deardorff (1978)\nocite{Deardorff1978}), that may depend on many factors, such as plant stress or atmospheric stability.
+\item multi-layer coupled schemes: these schemes are coupled with several atmospheric levels (fig \ref{fig1}c). They interact not by surface fluxes (except for the lowest level), but directly throughout the prognostic variables equations of the atmospheric model at each level. For example, drag forces by the obstacles (trees or buildings) will slow the wind and increase the turbulence, heat (water) fluxes by these obstacles will produce differential heating (moistening) between the levels. Xinmin \etal (1999)\nocite{Xinmin1999} use such a scheme coupled inline to a planetary boundary layer model to study the influence of the tree density in a forest on the air characteristic within the canopy at day and at night. Recently Simon \etal (2005)\nocite{Simon2005} built a multilayer scheme to describe precisely the water and carbon dioxyde fluxes inside the Amazonian forest. For building canopies, Martilli \etal (2002)\nocite{Martilli2002}, Coceal and Belcher (2005)\nocite{Coceal2005} and Kondo \etal (2005)\nocite{Kondo2005} are example of multi-layer schemes. The drawback of this high resolution description of the atmospheric processes is an intimate coupling of the surface scheme and the atmospheric model. Furthermore, because atmospheric layers are thin near the surface (depth of the order of 1m) to finely describe the air profile in the Surface Boundary Layer (SBL), the time step of the atmospheric model must usually be much smaller in order to insure numerical stability. \\
+Such schemes are used when one wants to describe very finely the interaction between the atmosphere and the surface features. For example, low vegetation and soil will interact with air temperature near the surface (say 1m), while tree leaves exchange temperature and humidity with higher level air (with other temperature, humidity). This therefore allows a priori  a better simulation of the physical and physiological processes. Another interest of these schemes is the direct simulation of air characteristics down to the surface itself, allowing several specific applications (wind stress in forest ridges, air temperature profile between buildings, etc...).
+\end{itemize}
+
+The objective of this paper is to implement into single-layer schemes the fine description of air profiles near the ground of the multi-layer schemes. That way, the single-layer schemes will gain the explicit physical representation of the surface boundary layer thanks to additionnal air layers, and still be coupled to atmospheric models through only one layer. 
+
+\begin{figure}[h]
+\hspace*{2.cm}
+\psfig{figure=\EPSDIR/fig1.eps,width=10cm}
+\caption{Schematic view of surface scheme coupling: a) single-layer surface scheme forced offline. b) single-layer surface scheme forced by an atmospheric model. c) multi-layer scheme forced by an atmospheric model. Dotted arrows show the interactions between surface and coupling/atm. forcing: (a) with the forcing level, (b) the lowest atm level and (c) with all levels intersecting the canopy.\label{fig1}}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Theory}
+
+
+\subsection{Atmospheric equations}
+
+The atmosphere can be described by dynamical (3 wind components) and thermodynamical variables (heat content or temperature, water vapor, possibly other water phases quantities). In this study, only the Planetary Boundary Layer was considered, neglecting mean vertical velocity and horizontal turbulent fluxes. The Boussinesq hypothesis is applied for the sake of simplicity. However, the following derivation can be generalized to more complex equation systems. Only the theory is described in the main part of the paper. The numerics for implementation and coupling in models are discussed in the last section.\\
+
+Using mean horizontal wind components ($U$, $V$), potential temperature ($\theta$) and water vapor specific humidity ($q$), without water phase changes, the equations describing the atmosphere evolution can be written as:
+\begin{equation}
+\left\{
+\begin{array}{llllll}
+\frac{\partial U}{\partial t} &=&\underbrace{- U\frac{\partial U}{\partial x} - V\frac{\partial U}{\partial y}}_{Adv}& \underbrace{-fV}_{Cor} &\underbrace{+fV_g}_{Pres.} & \underbrace{-\frac{\partial\overline{u'w'}}{\partial z}}_{Turb} \\
+\frac{\partial V}{\partial t} &=&\underbrace{- U\frac{\partial V}{\partial x} - V\frac{\partial V}{\partial y}}_{Adv}& \underbrace{+fU}_{Cor}&\underbrace{-fU_g}_{Pres.} & -\underbrace{\frac{\partial\overline{v'w'}}{\partial z}}_{Turb}\\
+\frac{\partial \theta}{\partial t} &=&\underbrace{- U\frac{\partial \theta}{\partial x} - V\frac{\partial \theta}{\partial y}}_{Adv}& + \underbrace{\dot{Q}}_{Diab.}  && -\underbrace{\frac{\partial\overline{w'\theta'}}{\partial z}}_{Turb} \\
+\frac{\partial q}{\partial t} &=&\underbrace{- U\frac{\partial q}{\partial x} - V\frac{\partial q}{\partial y}}_{Adv}&  && -\underbrace{\frac{\partial\overline{w'q'}}{\partial z}}_{Turb} \\
+\end{array}
+\right.
+\end{equation}
+
+
+where $U_g=-\frac{1}{f\rho}\frac{\partial p}{\partial x}$ and $V_g=-\frac{1}{f\rho}\frac{\partial p}{\partial y}$ are the geostrophic wind components, $\overline{u'w'}$, $\overline{v'w'}$, $\overline{w'\theta'}$ and $\overline{w'q'}$ are the turbulent fluxes, and $\dot{Q}$ represents the diabatic sources of heat (e.g. radiative tendency). \\
+
+In addition, a Turbulent Kinetic Energy (TKE, noted $e=\frac{1}{2}(\overline{u'^2}+\overline{v'^2}+\overline{w'^2})$) equation can be used to describe the turbulence in some atmospheric models:
+\begin{equation}
+\frac{\partial e}{\partial t} =\underbrace{- U\frac{\partial e}{\partial x} - V\frac{\partial e}{\partial y}}_{Adv} \underbrace{- \overline{u'w'}\frac{\partial U}{\partial z} - \overline{v'w'}\frac{\partial V}{\partial z}}_{Dyn. Prod.} +\underbrace{ \frac{g}{\theta}\overline{w'\theta_v'}}_{Therm. Prod.} - \underbrace{\frac{\partial \overline{w'e}}{\partial z}}_{Turb} -\underbrace{\epsilon}_{Diss.}
+\end{equation}
+
+where Right Hand Side terms stand for advection of TKE, dynamical production, thermal production, turbulent transport of TKE and dissipation respectively. \\
+
+\subsection{Atmospheric equations modified by canopy obstacles}
+
+The above equations refer to air parcels that do not interact with any obstacles. Near the surface, when one wants to take into account the influence of obstacles on the flow, these equations must be modified. In atmospheric models, this is done by adding additional terms for each variable, representing the average effect of these obstacles on the air contained in the grid mesh. One should note here that ideally, the volume of the obstacles (trees, buildings) contained into the grid mesh should be removed from the volume of air of the grid mesh. However, this significantly complexifies a lot the atmospheric model, and the approximation to keep the air volume constant even in the presence of obstacles is normally done. This simplification is also chosen here. Then, obstacles impact on the flow is parameterized as:\\
+
+\begin{equation}
+\left\{
+\begin{array}{lllllll}
+\frac{\partial U}{\partial t} &=&Adv& + Cor & + Pres.& + Turb(U) & + {\rm Drag_u} \\
+\frac{\partial V}{\partial t} &=&Adv& + Cor& + Pres. & + Turb(V) & + {\rm Drag_v}\\
+\frac{\partial \theta}{\partial t} &=&Adv& + Diab.  &&  + Turb(\theta) & + \frac{\partial \theta}{\partial t}_{canopy}\\
+\frac{\partial q}{\partial t} &=&Adv&  && + Turb(q) & + \frac{\partial q}{\partial t}_{canopy} \\
+\end{array}
+\right.
+\label{eq_complete}
+\end{equation}
+and 
+\begin{equation}
+\frac{\partial e}{\partial t} =Adv + Dyn. Prod. + Therm. Prod. + Turb  + Diss. + \frac{\partial e}{\partial t}_{canopy}
+\end{equation}
+
+where, 
+\begin{itemize}
+\item ${\rm Drag_u}$ and ${\rm Drag_v}$ are the drag forces (due to pressure forces against the obstacles) that slow the flow, 
+\item $\frac{\partial \theta}{\partial t}_{canopy}$ is the heating/cooling rate due to the heat release/uptake by the surfaces of the canopy obstacles in the grid mesh, 
+\item $\frac{\partial q}{\partial t}_{canopy}$ is the moistening/drying impact of these obstacles, 
+\item and $\frac{\partial e}{\partial t}_{canopy}$ represents the TKE production due to wake around and behind obstacles as well as the additionnal dissipation due to leaves-induced small-scale turbulence.
+\end{itemize}
+
+The prescription of these terms due to the obstacle impact on the flow are parameterized differently for each multi-level surface scheme, and this is not described in detail here. Parameterizations for dynamical variables are often similar for forest canopies. Wind drag is usually parameterized as the opposite of the square of the wind, as in Shaw and Schumann (1992)\nocite{Shaw1992} or Patton \etal (2001)\nocite{Patton2001}:  ${\rm Drag_u}=- C_d a(z) U \sqrt{U^2+V^2}$ and ${\rm Drag_v}=- C_d a(z) V \sqrt{U^2+V^2}$, where $C_d$ is a drag coefficient and $a(z)$ is the leaf area density at height $z$ (this parameter can be derived from Leaf Area Index and vegetation height, assuming a normalized vertical profile of leaves distribution in the canopy). The TKE production/destruction term can be parameterized as the sum of two effects: wake production by the leaves (parameterized as proportionnal to the cubic power of wind: $\frac{\partial e}{\partial t}_{canopy} \propto C_d(U^2+V^2)^\frac{3}{2}$ as in Kanda and Hino (1994)\nocite{Kanda1994}) and the energy loss due to fast dissipation of small scale motions (leaves are of a much smaller scale than the grid mesh). The latter term is often parameterized as proportionnal to the product of wind by TKE ($\frac{\partial e}{\partial t}_{canopy} \propto -C_de\sqrt{U^2+V^2}$ as in Kanda and Hino (1994)\nocite{Kanda1994}, Shen and Leclerc (1997)\nocite{Shen1997}, Patton \etal (2003)\nocite{Patton2003}). Because of the high degree of complexity of the processes involved (and hence of possibles simplifications), parameterizations for temperature and humidity exchanges are much more variables. For example, Sun \etal (2006)\nocite{Sun2006} parameterize heating effects simply as a function of radiation vertical divergence, while more complex vegetation models, as in Park and Hattori (2004)\nocite{Park2004}, solve leaves temperature and use it to estimate at each atmospheric layer the heat and water vapor exchanges between the forest canopy and the air: $\frac{\partial \theta}{\partial t}_{canopy} \propto a(z) (\theta_l - \theta)$ and $\frac{\partial q}{\partial t}_{canopy} \propto a(z) (q_{sat}(\theta_l) - q)$, where $\theta_l$ is the leaves potential temperature and $q_{sat}$ is humidity at saturation (proportionnality coefficients depend on physiological processes of the plant).\\
+
+For urban canopies, the same drag approach is chosen in general for the effect on wind, and only the wake production term is kept for TKE (because turbulent eddies are large behind buildings, so their dissipation is not as fast as those produced by leaves). Heat exchanges are however more complex and detailled (see Masson (2006)\nocite{Masson2006} for a review), as radiative trapping and shadows, different building heights, and sometimes even road trees are taken into account in state-of-the-art urban models. An exemple of urban canopy parameterization is given in Hamdi and Masson (2008)\nocite{Hamdi2008}.\\
+
+As stated above, these additional terms allow a fine description of the mean variable profiles in the atmospheric model in the SBL (e.g. wind and temperature profile as a function of stability, wind speed in forest canopy, etc...) and of the flow statistics (non constant flux layer inside the canopy for example). \\
+
+\subsection{Implementation of the SBL equations into a surface scheme}
+
+The objective of this paper is to provide a way to implement such a description of the SBL with a lot of atmospheric layers directly into the surface scheme. Such a scheme could be used offline (figure \ref{fig2}a) or coupled to an atmospheric model (figure \ref{fig2}b). As seen by comparing with figure \ref{fig2}c, the vertical resolution is the same as with a multi-layer model. The problem is that the computation of most of the terms of the equations (advection, pressure forces, diabatic heating) requires the atmospheric model dynamics and physical parameterizations. \\
+
+\begin{figure}[h]
+\hspace*{2.cm}
+\psfig{figure=\EPSDIR/fig2.eps,width=15cm}
+ \caption{Schematic view of the coupling between surface scheme and SBL scheme : a) single-layer surface scheme with SBL scheme forced offline. b) single-layer surface scheme with SBL scheme forced by an atmospheric model. c) multi-layer scheme coupling (as c) in figure \ref{fig1}). Dotted arrows show the interactions between surface and SBL scheme (a and b). Upper SBL level is at same height as atmospheric forcing level.\label{fig2}}
+\end{figure}
+
+
+The set of equation (\ref{eq_complete}) is rewritten by separating the processes as (i) 'large scale forcing' (LS, that are solved by the atmospheric model), (ii) the turbulence and (iii) the canopy effects:
+
+\begin{equation}
+\left\{
+\begin{array}{lllllll}
+\frac{\partial U}{\partial t} &=&LS(U)& + Turb(U) & + {\rm Drag_u} \\
+\frac{\partial V}{\partial t} &=&LS(V)& + Turb(V) & + {\rm Drag_v}\\
+\frac{\partial \theta}{\partial t} &=&LS(\theta)&  + Turb(\theta) & + \frac{\partial \theta}{\partial t}_{canopy}\\
+\frac{\partial q}{\partial t} &=&LS(q)&  + Turb(q) & + \frac{\partial q}{\partial t}_{canopy} \\
+\end{array}
+\right.\label{eq5}
+\end{equation}
+
+The TKE equation remains the same:
+\begin{equation}
+\frac{\partial e}{\partial t} =Adv(e) + Dyn. Prod. + Therm. Prod. + Turb  + Diss. + \frac{\partial e}{\partial t}_{canopy}
+\end{equation}
+
+To represent the SBL into the single-layer surface scheme, one considers prognostic atmospheric layers, between the surface and the forcing level of the surface scheme (that is the level that is coupled to the atmosphere). Each of these layers is represented by the wind speed, the potential temperature, the humidity and the Turbulent kinetic energy (all these variables being prognostically computed). They satisfy the set of equations (\ref {eq5}). In order to solve them, the following assumptions are made:
+\begin{itemize}
+\item The mean wind direction does not vary in the SBL (Rotation due to Coriolis inside the SBL is neglected).
+\item The advection of TKE is negligible. This assumption is not valid for horizontal scales (and grid meshes) of the order of a few times the canopy height, as equilibrium with forcing condition above is not reached (Belcher \etal (2003)\nocite{Belcher2003}, Coceal and Belcher (2005)\nocite{Coceal2005}), but it is valid for larger scales.
+\item The turbulent transport of TKE ($\overline{w'e}$) is negligible near the ground and in the SBL. This assumption is fairly valid, this term being generally important only higher in the BL .
+\item Above the canopy, the turbulent fluxes are uniform with height (constant flux layer).
+\item The Large Scale forcing terms ($LS(U), LS(V), LS(\theta), LS(q)$) are supposed to be uniform with height in the SBL. It is assumed, for example, that advection and pressure forces are driven by synoptic flow or by the mesoscale BL flow (e.g. sea breeze). Diabatic effects on temperature are also supposed to be uniform.
+\end{itemize}
+
+Then, the equations can be solved if the turbulent terms in the SBL (see subsection (\ref{turbs})), the canopy terms (depending on each surface scheme physics), and the (uniform with height) large scale forcing are known or parameterized. \\
+
+Writing the equations at the forcing level ($z=z_a$), which is supposed to be above the canopy (all canopy terms are set to zero) and therefore in the constant flux layer (the turbulent fluxes are supposed to be uniform, so that the divergences of turbulent fluxes are small), large scale terms can be estimated from the temporal evolution of the variables at the forcing level:
+\begin{equation}
+\left\{
+\begin{array}{lllllll}
+\frac{\partial U}{\partial t}(z=z_a) &=&LS(U) \\
+\frac{\partial V}{\partial t}(z=z_a) &=&LS(V) \\
+\frac{\partial \theta}{\partial t}(z=z_a) &=&LS(\theta)\\
+\frac{\partial q}{\partial t}(z=z_a) &=&LS(q)\\
+\end{array}
+\right.\label{eq7}
+\end{equation}
+
+In reality, the constant flux layer hypothesis supposes not a constant turbulent flux but a small variation of the turbulent flux compared to its value. The small decrease/increase of the turbulent flux can lead to tendencies of the mean variables. However, this small variation is generally relatively uniform in the whole boundary layer (e.g. uniform heating of the convective boundary layer). This impact of the fluxes at the scale of the whole BL is included in the LS terms. \\
+
+\subsection{Boundary conditions}
+
+Finally, one obtains (using only one wind component, as the wind does not veer with height in the SBL):
+
+\begin{equation}
+\left\{
+\begin{array}{lllllll}
+\frac{\partial U}{\partial t} &=&\frac{\partial U}{\partial t}(z=z_a)& + Turb(U) & + {\rm Drag_u} \\
+\frac{\partial \theta}{\partial t} &=&\frac{\partial \theta}{\partial t}(z=z_a)&  + Turb(\theta) & + \frac{\partial \theta}{\partial t}_{canopy}\\
+\frac{\partial q}{\partial t} &=&\frac{\partial q}{\partial t}(z=z_a)&  + Turb(q) & + \frac{\partial q}{\partial t}_{canopy} \\
+\end{array}
+\right.\label{eq9}
+\end{equation}
+And
+\begin{equation}
+\frac{\partial e}{\partial t} = Dyn. Prod. + Therm. Prod. + Diss. + \frac{\partial e}{\partial t}_{canopy} \label{tke}
+\end{equation}
+
+The surface condition for the wind equation is given by the turbulent flux at the surface $\overline{u'w'}(z=0)$. The value at the top of the SBL scheme is given by wind at forcing level: $U=U(z=z_a)$. \\
+The surface condition for the potential temperature equation is given by the turbulent flux at the surface $\overline{w'\theta'}(z=0)$. The value at the top is given by the temperature at forcing level: $\theta=\theta(z=z_a)$. \\
+The surface condition for the humidity equation is given by the  turbulent flux at the surface $\overline{w'q'}(z=0)$. The value at the top is given by humidity at forcing level: $q=q(z=z_a)$. \\
+
+The turbulent fluxes at the surface are computed by the surface scheme, using the atmospheric variables of the lowest level of the SBL (and not at the usual forcing level at $z_a$). The exact formulation depends on the surface scheme used. For example, a lot of (1 layer) surface schemes use to compute the surface heat (vapor)  flux a formulation with exchange coefficients $C_h$ (including a dependancy with stability), surface and air temperatures (humidity) ($\overline{w'\theta'}(z=0)=C_h (\theta_s - \theta_a)$). With the SBL scheme, $\theta_a$ is the temperature at first SBL level, and the stability in the lowest layer in near neutral (because of the proximity to the ground -we used 50cm as first layer-).\\
+
+There is no need of boundary condition for the TKE at the surface or at the forcing level, as no vertical gradient of TKE is used. The only term that needs special computation near the surface is the Dynamical production term, as it uses a vertical gradient of mean wind. \\
+
+\subsection{Turbulence scheme\label{turbs}}
+
+One turbulence scheme is of course needed in the SBL. A TKE turbulence scheme, developed by Cuxart \etal (2000)\nocite{Cuxart2000}, is chosen here. The mixing length is computed as in Redelsperger \etal (2001)\nocite{Redelsperger2001}. Mixing and dissipative length scales are not equal, in order to represent accurately the dissipation modification due to the -1 power law of the turbulence in the SBL. Other turbulence schemes may be used.\\
+
+A summary of the turbulence scheme is given below:
+\begin{equation}
+\left\{
+\begin{array}{lllllll}
+\overline{u'w'}&=& - C_u l\sqrt{e}\frac{\partial U}{\partial z} \\
+\overline{w'\theta'}&=& - C_{\theta}l\sqrt{e}\frac{\partial \theta}{\partial z} \\
+\overline{w'q'}&=& - C_{q} l\sqrt{e}\frac{\partial q}{\partial z} \\
+\frac{\partial e}{\partial t} &=& \underbrace{- \overline{u'w'}\frac{\partial U}{\partial z}}_{Dyn. Prod.} +\underbrace{ \frac{g}{\theta}\overline{w'\theta_v'}}_{Therm. Prod.} -\underbrace{C_\epsilon \frac{e^{\frac{3}{2}}}{l_\epsilon}}_{Diss.} + \frac{\partial e}{\partial t}_{canopy}\\
+\end{array}
+\right.
+\end{equation}
+
+with $C_u=0.126$, $C_\theta=C_q=0.143$, $C_\epsilon=0.845$ (from Cheng \etal (2002)\nocite{Cheng2002} constants values for pressure correlations terms and using Cuxart \etal (2000)\nocite{Cuxart2000} derivation).
+The mixing and dissipative lengths, $l$ and $l_\epsilon$ respectively, are equal to (from Redelsperger \etal (2001)\nocite{Redelsperger2001}, $\alpha=2.42$) :
+\begin{equation}
+\left\{
+\begin{array}{lllllll}
+l&=&\kappa z/[\sqrt{\alpha}C_u  \phi_m^2(z/L_{MO})\phi_e(z/L_{MO})]^{-1}&\\
+l_\epsilon&=&l \alpha^2 C_\epsilon / C_u / (1-1.9z/L_{MO}) & {\rm if \hspace*{1.cm}z/L_{MO}<0}\\
+l_\epsilon&=&l \alpha^2 C_\epsilon / C_u / (1-0.3\sqrt{z/L_{MO}}) & {\rm if\hspace*{1.cm} z/L_{MO}>0}\\
+\end{array}
+\right.
+\end{equation}
+Where $L_{MO}$ is the Monin-Obukhov length, $\phi_u$ and $\phi_e$ the Monin-Obukhov stability functions for momentum and TKE. \\
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{conclusion}
+
+A formulation allowing to include prognostic atmospheric layers in offline surface schemes is derived from atmospheric equations. The interest of this approach is to use the advanced physical description of the SBL-canopy interactions that was available only in complex coupled multi-layer surface schemes. The coupling only occurs at the bottom level of the atmospheric model that should be coupled above the surface+SBL scheme. Variables that must be exchanged are: incoming radiation and forcing level air characteristics towards the surface scheme, upward radiative and turbulent fluxes from it. The air layers prognostically simulated with the SBL scheme take into account:
+
+\begin{itemize}
+\item The term that is related to large-scale forcing (e.g. advection). The detail of this term is not known by the SBL scheme. The evolution of the air characteristics at the forcing level is supposed to take into account all these large-scale forcing terms.
+\item The turbulent exchanges in the SBL (including in the canopy, if any). They will modify vertical profiles in the SBL. For example, the logarithmic profile of wind is directly induced by these turbulent fluxes, and is well reproduced by the SBL scheme.
+\item The drag and canopy forcing terms. These are computed for each layer, due to the interaction between air and the canopy. These exchanges have to be modeled by the surface scheme to which the SBL scheme is coupled. In the present paper, for forests, it takes into account the dynamical terms: drag and impact on Tke.
+\end{itemize}
+
+The possible applications of a SBL scheme included in surface schemes can be:
+\begin{itemize}
+\item a more physical determination of standard 2m variables and 10m wind. It can be seen as a drastic increase of the vertical resolution of the atmospheric models near the ground, without the drawback of a smaller time step (that would be necessary to resolve the advection on a very fine grid). Furthermore, because the additional air layers are not handled by the atmospheric model, the SBL scheme (associated to a surface single-layer scheme) is easy to couple with Numerial Weather Prediction or research atmospheric models.
+\item a better description of the turbulent exchanges and the stability in the SBL, including over complex terrain, for low-level flow and dispersion studies near the surface. As future applications, the dispersion processes in presence of canopy (e.g. chemistry vertical diffusion in urban areas) could then be more accurately simulated.
+\item the inclusion of the detailed physics of the multi-layer schemes (e.g. the interactions of forest or urban canopy with atmospheric layers in the SBL) into single-layer schemes. 
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{\bf{Appendix}: Vertical and temporal discretization}
+
+\subsection{Vertical discretization}
+
+The vertical grid for the SBL scheme is a staggered grid (figure \ref{fig3}). Historical variables ($U$, $\theta$, $q$, $e$) are defined on 'full' levels. The temporal evolution terms due to canopy obstacles (${\rm Drag_u}$, $\frac{\partial \theta}{\partial t}_{canopy}$, $\frac{\partial q}{\partial t}_{canopy}$, $\frac{\partial e}{\partial t}_{canopy}$) are also located on these full levels. The turbulent fluxes computed by the SBL scheme are computed on the 'flux' levels, staggered between the full levels. The height of full levels is exactly at middle height between half levels. Note that the grid can be (and is most of the time) stretched, with a higher resolution near the ground. The ground is the first flux level (to be consistent with the boundary condition provided: the surface turbulent fluxes). The atmospheric forcing level is the upper full level (to be consistent with the upper boundary condition). \\
+
+\begin{figure}[h]
+\hspace*{2.cm}
+\psfig{figure=\EPSDIR/fig3.eps,height=20cm}
+\caption{Schematic view of the vertical discretization for the SBL scheme. Plain lines are full levels. Dotted lines are flux levels. \label{fig3}}
+\end{figure}
+
+
+\subsection{Temporal discretization}
+
+For any variable $X$ ($U$, $\theta$, $q$ or $e$), the evolution equation can be written as:
+\begin{equation}
+\frac{\partial X}{\partial t} = \frac{\partial X}{\partial t}(z=z_a) - \frac{\partial F(\frac{\partial X}{\partial z})}{\partial z} + For(X)
+\end{equation}
+where $F$ is the turbulent flux for $X=[U,\theta,q]$, and $For$ contains  canopy forcing terms ($\frac{\partial X}{\partial t}_{canopy}$ for $X=[U,\theta,q,e]$) and other RHS forces for $X=[e]$. Note that the turbulent flux terms $F$ depend formally on the vertical derivative of the variable ($\frac{\partial X}{\partial z}$) while canopy forces and RHS TKE forces depend on the variable itself ($X$). \\
+
+In order to satisfy the stability of the SBL scheme at large time-steps, an implicit solving is performed. If the coupling at the atmospheric level is explicit, the atmospheric forcing is not modified in the current time-step by the SBL and surface schemes (i.e. $\frac{\partial X}{\partial t}(z=z_a)$ does not change during the SBL solving). Of course, the atmosphere will further evolve in response to the turbulent SBL fluxes (through the atmospheric model turbulence parameterization). In these conditons, the SBL implicit solving writes:
+\begin{equation}
+\frac{X^+ - X^-}{\Delta t} = \frac{\partial X}{\partial t}^-{(z=z_a)} - \frac{\partial F}{\partial z}^- - \frac{\partial \frac{\partial F}{\partial z}}{\partial \frac{\partial X}{\partial z}}^- \times \left(\frac{\partial X}{\partial z}^+-\frac{\partial X}{\partial z}^-\right) + For^- + \frac{\partial For}{\partial X}^- \times(X^+-X^-)
+\label{disc}
+\end{equation}
+Where $\Delta t$ is the time step, $^-$ subscript stands for previous time-step variable (known), and $^+$ subscript for the future time-step variable (which one seeks to calculate). Such an implicit scheme leads to a linear system linking all variables at each level to those from the levels below and above (due to the vertical gradient at instant $^+$). This system is tridiagonal, and easy to solve numerically. \\
+
+
+\subsection{Implicit coupling with the atmospheric model}
+
+It may be necessary in some atmospheric models (essentially due to very long time steps - half an hour- and the turbulence scheme used in the atmospheric model) to couple implicitly the surface (including the SBL scheme here) and the atmosphere. First RHS term in Equation \ref{disc} is now equal to $[X_{(z=z_a)}^+ -X_{(z=z_a)}^-]/\Delta t$. The atmospheric variable at time $^+$ is modified by the surface flux at the forcing level. It is formalized by Best \etal (2004)\nocite{Best2004} : $X_{(z=z_a)}^+ = A \times F_{(z=z_a)}^+ + B$ (where A and B are known). Therefore,  Equation \ref{disc}, in case of implicit coupling with the atmosphere, writes:
+\begin{equation}
+\begin{array}{ll}
+\frac{X^+ - X^-}{\Delta t} =& \frac{B-X{(z=z_a)}^-}{\Delta t} + \frac{A}{\Delta t}\times \left\{ F^-_{(z=z_a)}+ \frac{\partial F}{\partial (\frac{\partial X}{\partial z})}^-{\scriptsize{(z=z_a)}}\times \left(\frac{\partial X}{\partial z}^+{\scriptsize{(z=z_a)}}-\frac{\partial X}{\partial z}^-{\scriptsize{(z=z_a)}}\right)\right\}  \\
+&- \frac{\partial F}{\partial z}^- - \frac{\partial \frac{\partial F}{\partial z}}{\partial \frac{\partial X}{\partial z}}^- \times \left(\frac{\partial X}{\partial z}^+-\frac{\partial X}{\partial z}^-\right) + For(X)^- + \frac{\partial For}{\partial X}^- \times(X^+-X^-)
+\end{array}
+\end{equation}
+This is still a linear system involving variables at future time step at all levels of the SBL scheme, but this system is no longer tridiagonal, because the term $\frac{\partial X}{\partial z}(z=z_a)^+$ (i.e. at upper SBL level) influences directly the variable $X^+$ at each level. However, such a system is still resolvable, showing the generality of the SBL scheme method proposed here.
+
+%====================
+\bibliography{surfex_scidoc}
+%====================
