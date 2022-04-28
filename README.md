@@ -1,0 +1,2 @@
+# scidoc
+SURFEX scientific documentation
