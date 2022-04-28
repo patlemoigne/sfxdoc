@@ -1,0 +1,1572 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CONTRIBUTION TO THE SURFEX BOOK1: "Surface Processes Scheme"
+% Author        : P. Le Moigne
+% Original      : January 05, 2009
+% Last Update   : January 05, 2009
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Urban and artificial areas}
+\minitoc
+%=========================
+\bibliographystyle{plain}
+%=========================
+
+\section{Introduction}
+
+\subsection{Modelling cities in atmospheric models}
+
+Due to the complexity and diversity of towns around the world,
+conclusions drawn from experimental studies on the interaction between the
+atmosphere and urbanized areas
+most of the time are limited either to a particular site
+or physical processes. To overcome this problem,
+numerical studies are aimed to simulate the urban climatology or energy budget.
+However, they still follow some simplified approaches.
+Building-resolving models - i.e. models in which individual building
+shapes are described - allow, from a long time ago, the detailed examination of some processes
+(radiative effects see for e.g. Terjung \etal (1980)\nocite{terjung1980}, 
+or wind channeling), but because of
+computational cost, applications are limited to local urbanization and comfort studies. Even now, the use of such models is limited to the neighbourhood scale (typically 1km$^2$ or less).
+
+Performing a coupling between the urban surface and the atmosphere in atmospheric models requires a different approach, that allows to simulate the effects of cities at a larger scale. Before year 2000, and still in most climate models and numerous numerical weather 
+prediction models, the most common way to do this was (ans is) to use a vegetation-atmosphere transfer model whose parameters have been modified (Seaman \etal (1989)\nocite{seaman1989}, Menut (1997)\nocite{menut1997}), as opposed to an urban model.
+Cities are then modeled as bare soil or a concrete plate. The roughness length is often large (one to a few meters, see Wieringa (1993)\nocite{wieringa1993} or Petersen (1997)\nocite{petersen1997}). The soil moisture availability (or the soil depth) is reduced, so that the Bowen ratio is shifted towards high values (large sensible heat flux).
+
+However, these approaches do not allow to represent accurately most of the physical processes in cities, and their consequences, such as the urban heat island at night. This is why several models were developed since year 2000, based on a simplified geometrical representation of the buiildings: the 'urban canyon'. The 'canyon' model, from Oke and colleagues was developed during the seventies, and is dedicated to urban streets:
+a road is bordered by two facing building walls. such an approach allows to capture the most pertinent processes: radiative trapping inside the canyon, impact on flow, higher surface in contact with the atmosphere available for heat storage., imperviousness of the buildings and roads, etc... \\
+
+The first two models of this type are TEB (Masson 2000\nocite{Masson2000}) and BEP (Martilli \etal 2002\nocite{Martilli2002}). Several other models following this philosophy were developed in the ten next years (see reviews in Masson 2006\nocite{Masson2006} and Martilli 2007\nocite{Martilli2007}). Up to 25 urban models participated to a recent intercomparison exercice (Grimmond \etal 2010, 2011\nocite{Grimmond2010}\nocite{Grimmond2011}). The conclusions of this study was that either simple models (as LUMPS, using statistical relationships based on urban fluxes observations) or the most 'complex' ones, with the most physics in it, performed the better to reproduce the energy balance. However, simpler models are not able to simulate diagnostic quantities, such as air temperatre, energy consumption of buildings, etc, that more complex models, such as TEB (included in SURFEX), can do. This limits their range of use. Furthermore, another conclusion was that it was necessary to improve the representation of vegetation. 
+
+\subsection{Objectives of the Town Energy Balance scheme}
+
+The TEB model is aimed
+to simulate the turbulent fluxes into the atmosphere
+at the surface of a mesoscale atmospheric model which is covered
+by buildings, roads, or any artificial material.
+It should parameterize both the urban surface and the roughness sublayer,
+so that the atmospheric model only 'sees' a constant flux layer
+as its lower boundary.
+
+It must be considered as a part of the surface parameterization
+of the atmospheric model. The fluxes should be computed for each 
+land occupation type
+by the appropriate scheme, and then averaged in the atmospheric model grid
+mesh, with respect to the proportion occupied by each type.
+For example, a partition should be:
+(1) sea; (2) inland water; (3) natural and cultivated terrestrial surface;
+(4) towns. The following fluxes are calculated:
+latent and sensible heat fluxes (W m$^{-2}$), upward radiative fluxes
+(W m$^{-2}$) and momentum fluxes (m$^2$ s$^{-2}$). Many other indicators can be computed, especially to estimate local urban climate, energy consumption, water runoff, thermal comfort, ... \\
+
+
+
+\subsection{Overview of the Town Energy Balance scheme}
+
+The physics treated by the TEB (Town Energy Balance, Masson 2000) scheme is relatively complete.
+Due to the complex shape of the city surface, the urban energy budget
+is split into different parts: a minimum of {\bf three} surface
+energy budgets are considered: one for the roofs,
+roads, and walls. 
+One second wall energy budget is added if walls are treated separately to take into account orientation effetcs.
+Up to two energy budgets are
+added for snow when it is present on roofs or roads.
+Some of the physics were derived from the literature (long wave radiation or
+thermal conduction through the surfaces), since they are classically assumed
+to estimate temperatures in conditions
+without feedback towards the atmosphere (during  nights with calm wind).
+However, most parts of the physics need an original approach
+(short wave radiation,
+thermodynamical and anthropogenic flux treatment, rain and snow),
+since they occur when interaction with the atmosphere is strong. \\
+
+The representation of urban vegetation has been improved in the recent years, with {\bf gardens} and {\bf greenroofs}. A {\bf Building Energy Module} (BEM) is also implemented in order to represents the energetics inside the buildings. This allows to simulate indicators such as energy consumption of domestic ehating and air conditioning. \\
+
+
+
+\subsection{TEB patches}
+
+Cities are very heterogeneous. Therefore, averaged urban characteristics in a grid mesh may be considered as a broad approximation in regards of certain scientific objectives. From the point of view of the coupling of the urban surface to the atmosphere, an averaged description of the urban fabric in each grid mesh can be considered sufficient, since only the energy fluxes towards the atmosphere are needed (and they are mostly governed by the atmospheric forcing and the overall view of the urban fabric, such as building density, wall density, mean building height, etc...).\\
+
+However, in order to simulate the details in some applications, such as for example to estimate the human comfort in perpendicular roads, or to represent the energetics of different buildings in the grid mesh, one may need to have several computations of TEB in the same grid mesh. For example, one could perform a simulation for 2 canyons with perpendicular roads. This is possible, by using {\bf patches} for TEB. While such patches are often used for the natural part of the grid, especially for climate simulation, this is not the case for TEB. However, if needed, the possibility to activate patches for TEB is implemented in SURFEX. Per default, only road directions change when using several patches (4 roads at 45° from each other when using 4 patches for example). When using several patches, the user needs to define what are the differences between the patches (e.g. patches with different building heights, with different building materials, etc...). \\
+
+The description of the physics of the model in the subsequent sections are all done for only one patch, but are valid if you use several patches as well. \\
+
+
+\subsection{Town geometry description}
+
+Numerous fine-scale studies on building climatology exist.
+In those, several individual buildings are usually
+present in order to study their radiative interaction,
+the wind channeling effects, or the building insulation.
+The {\bf canyon} concept, developed by city climatologists
+(e.g. Oke (1987)\nocite{Oke1987a}), uses such a framework:
+it considers a single road, bordered by facing buildings.
+In these studies, models are, at best, forced by atmospheric
+data (radiation, wind
+above the roofs) but are not in interaction with it.
+
+The TEB model is aimed to parameterize town-atmosphere 
+dynamic and thermodynamic interactions. It is applicable for mesoscale
+atmospheric models (a grid mesh larger than a hundred meters typically).
+Then, spatial
+averaging of the town characteristics as well as its effect on the atmosphere,
+are necessary.
+The individual shapes
+of each building are no longer taken into account. 
+The TEB geometry is based on the canyon hypothesis. However, a
+single canyon would be too restrictive at the 
+considered horizontal scale.
+
+We therefore use the following original city representation:
+\begin{enumerate}
+\item the buildings have the same height and width (in the model mesh).
+The roof level is at the surface level of the atmospheric model.
+\item buildings are located along identical roads, the length
+of which is considered
+far greater than their width. The space contained between two facing buildings
+is defined as a canyon.
+\item any road orientation is possible. At that point, two options are possible:
+\begin{enumerate}
+\item only the information on the main road orientation is kept in each grid mesh. This option induces to simulate two wall energy balances instead of one, because of shading effects. However, it can be pertinent to estimate canyon micro-climate and human comfort for a specific road direction.
+\item all directions exist with the same probability. This hypothesis allows the computation of averaged forcing for road and wall surfaces. In other words, when the canyon orientation appears in a formula (with respect to the sun or the wind direction), it is averaged over 360$^\circ$. In this way, no discretization is performed on the orientation.
+\end{enumerate}
+\end{enumerate}
+
+The parameters for the morphological description of the city, and the surface temperatures, are given below. The urban vegetation on ground (gardens, small parks, etc...) can be either simulated outside the city, as is done by the large majority of the Urban Canopy Models, or, for more realism, inside the canyon. This has been implemented by Lemonsu \etal (2012)\nocite{Lemonsu2012}, and allows the physical interactions between the buildings and the vegetation(e.g. shadows). More details will be provided in section \ref{garden}.
+
+\begin{figure}[t]
+\hspace*{0.cm}
+\psfig{figure=\EPSDIR/schema_garden.eps,width=15cm}
+\caption{Overall implementation of gardens in TEB a) original version without garden; b) with gardens}
+\label{garden}
+\end{figure}
+
+
+\begin{itemize}
+\item $f_{bld}$ the fraction of buildings (as seen from bird's view) relative to the urban surface, $T_{roof}$ (ot $T_R$) the surface temperature of roofs. The roof surfaces can be composed of several subsurfaces:
+\begin{itemize}
+\item structural roof
+\item green roof
+\item solar panel (that can shelter both structural and green roofs)
+\end{itemize}
+\item $f_{road}$ (or $f_r$) the fraction of impervious surfaces relative to the urban surface, $T_{road}$ 'or $T_r$) the surface temperature of these impervious surfaces.
+\item $f_{garden}$ the fraction of gardens relative to the urban surface (is equal to zero when the urban vegetation is not treated within TEB in the SURFEX grid mesh), and $T_{garden}$ the surface temperature of gardens (including all effects influencing it, as the presence of snow mantel on vegetation).
+\item $h/w$ the ratio between building's height $h$ and (idealized) modelled canyon width $w$ (that can take into account vegetation if gardens are simulated), $T_{facade_A}$ and $T_{facade_B}$  the temperature of both facades $A$ and $B$. The facades include structural walls and windows (the latter are present only if the Building energy Module is used):
+\begin{itemize}
+\item $T_{win}$ the surface temperature of windows (supposed identical whatever the wall, $A$ or $B$), $f_{win}$ is the fraction of windows relative to the surface of facade. 
+\item $T_{wall_A}$ and $T_{wall_B}$ the surface temperature of each wall, $(1-f_{win})$ is the surface of structural wall relative to the surface of the facade.
+\end{itemize}
+
+\end{itemize}
+
+Note that a parameter is not easy to estimate: the $h/w$ canyon aspect ratio. It can be computed following many different hypotheses, for example from 3D buildings databases. Because the more important physical processes leading to the Urban Heat Island phenomena are directly linked to the surface of walls (storage term and convection term), and because the surface of wall is an indicator that is relatively straightforward to compute, the $h/w$ aspect ratio is computed following:
+\begin{displaymath}
+h/w = \frac{1}{2} \frac{R_{wall-hor}}{1-f_{bld}}
+\end{displaymath}
+where $R_{wall-hor}$ is the ratio of wall to horizontal (town) surface. \\
+
+
+
+\subsection{Summary of the chapter}
+
+The following sections successively present: \\
+
+\begin{itemize}
+\item the basics of TEB, for impervious surfaces only
+\item the representation of urban vegetation: gardens and greenroofs
+\item the Building Energy Module
+\item the Surface Boundary Layer module (cf chapter \ref{SBL}), when applied in TEB
+\item miscellaneous indicators
+\item the description of the architectural characteristics of the building
+\end{itemize}
+
+A list of the most important input parameters and of the prognostic variables of the scheme are given in Appendix fot heis chapter in Tables \ref{symbol} and \ref{symbol2}. Only the most importants features are described. For further details, the reader is invited to read the referenced papers. \\
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Basics of the Town Energy Budget scheme}
+
+
+In this section, the focus will be done to describe the processes of the simplest version of the model (without gardens, building energy module). However, some of the processes, especially those exchanging with the different type of surfaces (as the radiative exchanges), need to take into account the more detailed parameterizations when they are used. In order to avoid redundancy in the description of these processes, the equations with all the terms will be presented. \\
+
+\begin{figure}[h]
+\hspace*{2.cm}
+\psfig{figure=\EPSDIR/geom.eps,width=12cm}
+\caption{Canyon geometry in the TEB scheme (without gardens, building's energy module, greenroofs), and its prognostic variables.
+\label{TEB2}}
+\end{figure}
+
+{\bf The TEB model
+does not use one urban surface temperature} (representative of the 
+entire urban cover), but {\bf three} (or {\bf four}) surface temperatures,
+representative of roofs, roads and walls (1 generic wall, or 2 separate facing walls in case of oriented road). There are two reasons for that:
+\begin{itemize}
+\item urban climatologists generally consider complex (non-flat) geometry
+cases, in particular the 'canyon' geometry. In order to be consistent with
+their findings, the TEB model uses a complex surface consisting of
+multiple explicit energy budgets.
+\item one spatially-averaged surface temperature is often used in
+soil-vegetation schemes, in order to compute the turbulent fluxes towards
+the atmosphere following the Monin-Obukhov similarity theory.
+However, over towns, 
+the use of only one surface temperature is debatable, because
+it has been observed that the Monin-Obukhov similarity theory does not
+apply for temperature in the urban roughness sublayer.
+\end{itemize}
+The second point will be adressed in more detail in section \ref{turb}.
+The parameters of the scheme depend directly on building shapes
+and construction materials. This makes the TEB scheme easy to initialize,
+without the need for any atmospheric data for parameter tuning. Construction
+material characteristics can be found in the literature (e.g. see Oke (1988)\nocite{Oke1988}), or defined locally depending on the building's type, use and date of construction (see section \ref{archi}).
+\\
+
+Because the two walls of the canyon behave identically (in term of representation of the processes), except for direct solar radiation (one wall is under sunlight, the other in shadows), longwave radiation, and wind exposition (leeward and windward), all the presentation of the processes hereafter are done for only one wall, with the index $w$. Specific effects of road direction on the processes will be specifically mentioned: the quantities related to the walls ($A$ and $B$ indicating the two facing walls) will there be noted $w_A$ and $w_B$, instead of simply $w$.\\
+
+These hypotheses, as well as the
+formulations chosen for the physics (see hereafter), allow
+the development of a relatively
+simple scheme from the geometric point of view, but taking into account most of the physical processes. \\
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Temperature evolution equations\label{T}}
+
+As discussed above, the urban surface is very inhomogeneous with
+respect to shape and building materials.
+Urban climatologists need at least four surfaces
+to describe it: the roof, the road, and two facing walls.
+The problem considered here (the evaluation of the turbulent and radiative
+fluxes from the urban cover to the atmosphere) allows the treatment of only
+three types of surfaces (roof, road, wall), while keeping enough accuracy
+to correctly represent the different terms of the surface energy budget.
+This is why the TEB model uses several surface temperatures,
+$T_R$, $T_r$ and $T_{w_A}$ (and $T_{w_B}$ eventually) representative
+of roofs, roads and walls, respectively. 
+
+Furthermore, in order to treat the conduction fluxes to or from the building
+interiors (roof, wall) or the ground (road), each surface type
+is discretized into several layers (Figure \ref{TEB2}).
+Per convention, the layer with subscript $1$ is the one
+in contact with the air (hereafter 'surface layer').
+
+The equations describing the  evolution  of the temperatures of the layers
+(representative of the middle of the layer)
+are based on energy budget considerations.\\
+
+The prognostic equations for the surface layers of the roof,
+wall (either $A$ or $B$) and road respectively, read:
+
+\begin{eqnarray}
+C_{R_1}\frac{\partial T_{R_1} }{\partial t} = &(1-{\delta_{snow}}_R)&\frac{1}{d_{R_1}}
+\left( S_{R}^* + L_{R}^* - H_R -LE_R  - G_{R_{1,2}} \right) \nonumber \\
+&+ {\delta_{snow}}_R&\frac{1}{d_{R_1}}
+\left( G_{R_{snow,1}} - G_{R_{1,2}} \right)  \nonumber \\
+C_{w_1}\frac{\partial T_{w_1} }{\partial t} = &&\frac{1}{d_{w_1}}
+\left( S_{w}^* + L_{w}^* - H_w   - G_{w_{1,2}} \right)\nonumber \\
+C_{r_1}\frac{\partial T_{r_1} }{\partial t} = &(1-{\delta_{snow}}_r)&\frac{1}{d_{r_1}}
+\left( S_{r}^* + L_{r}^* - H_r -LE_r  - G_{r_{1,2}} \right) \nonumber \\
+&+ {\delta_{snow}}_r&\frac{1}{d_{r_1}}
+\left( G_{r_{snow,1}} - G_{r_{1,2}}  \right) \nonumber
+\end{eqnarray}
+
+These equations can be written in a generic way:
+
+\begin{equation}
+C_{\star_1}\frac{\partial T_{\star_1} }{\partial t} = (1-{\delta_{snow}}_\star)\frac{1}{d_{\star_1}}
+\left( S_{\star}^* + L_{\star}^* - H_\star -LE_\star - G_{\star_{1,2}} \right)
++ {\delta_{snow}}_\star\frac{1}{d_{\star_1}}
+\left( G_{\star_{snow,1}} - G_{\star_{1,2}} \right)
+\end{equation}
+Where, the subscript $_\star$
+stands either for $_R$, $_r$ or $_w$, describing
+roof, road and wall variables (only roof and road
+for water variables) respectively. This convention is used
+in the rest of this paper.
+
+$T_{\star_k}$ is the temperature of the $k^{ith}$ layer of the considered
+surface (in the above equations, $k=1$). $C_{\star_k}$ represents
+the heat capacity,
+$\lambda_k$ the thermal conductivity and $d_{\star_k}$ the layer thickness.
+
+The fluxes $S_{\star}^*$, $L_{\star}^*$,
+$H_\star$, $LE_\star$, $G_{\star_{1,2}}$ and $G_{\star_{snow,1}}$
+stand for net solar radiation, net infra-red radiation,
+sensible heat flux, latent heat
+flux, and conduction heat flux between surface layer and the underlying layer,
+conduction heat fluxes between the base of the snow mantel and the surface,
+respectively. 
+${\delta_{snow}}_\star$ is the snow fraction on the surface (which is
+zero on the walls).
+
+It is assumed that the surface layer of each surface
+is sufficiently thin such that the layer averaged temperature can be used to
+evaluate the radiative and turbulent surface fluxes.
+This means that the surface temperatures $T_{\star}$ are computed as:
+\begin{displaymath}
+T_{\star} = T_{\star_1}
+\end{displaymath}
+For the sake of clarity, the $_1$ subscript will be removed in the next sections.
+\\
+
+The other layer temperatures evolve according to a simple heat conduction
+equation. For the $k^{ith}$ layer:
+\begin{equation}
+C_{\star_k}\frac{\partial T_{\star_k} }{\partial t} = 
+\frac{1}{d_{\star_k}}
+\left( G_{\star_{k-1,k}} - G_{\star_{k,k+1}} \right)
+\end{equation}
+
+In these equations, the conduction flux between layers $k$ and
+$k+1$ reads (for $k<n$ where $n$ is the number of layers):
+\begin{equation}
+G_{\star_{k,k+1}} = \overline{\lambda}_{k,k+1}
+\frac{T_{\star_{k}}-T_{\star_{k+1}}}{\frac{1}{2}(d_{\star_k}+d_{\star_{k+1}})}
+\end{equation}
+with
+\begin{equation}
+\overline{\lambda}_{k,k+1} =
+\frac{d_{\star_{k}}+d_{\star_{k+1}}}{(d_{\star_k}/\lambda_k)
++(d_{\star_{k+1}}/\lambda_{k+1})}
+\end{equation}
+
+The lower boundary conditions for the roofs and walls
+are given by the building internal
+temperature, the road one being represented as a zero flux lower boundary.
+The fluxes between the $n^{th}$ layer (the inner layer)
+and the underlying material are then:
+
+\begin{eqnarray}
+G_{R_{n,n+1}} &=& \lambda_{n}
+\frac{T_{R_{n}}-T_{i_{bld}}}{\frac{1}{2}(d_{R_n})}\\
+G_{w_{n,n+1}} &=& \lambda_{n}
+\frac{T_{w_{n}}-T_{i_{bld}}}{\frac{1}{2}(d_{w_n})}\\
+G_{r_{n,n+1}} &=& 0
+\end{eqnarray}
+
+Due to large temperature gradients which can exist, and because of the multi-layer structure of the walls or the roofs, it is recommended that at least 5 layers are used to represent each surface. This is done automatically by the model per default, that computes layers for the conduction equation within the roofs and walls with fine layers outside and inside, and, for the road, finer layers in contact to the atmosphere. Note that these computation layers are different from the information given to describe the materials that compose the building. There any number of layer and any thickness can be given (for example one layer of concrete of 30cm and one insulation layer of 5cm). \\
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Longwave budget\label{LW}}
+
+Initially, in the historic version of the model (Masson 2000), the trapping of long-wave radiation by the canyon surfaces
+was computed with one re-emission taken into account (from the Johnson \etal (1991)\nocite{Johnson1991} formulation). However, with the separation of walls (with road orientation) and the addition of additional components to the urban system with the gardens and the windows (for the Building Energy Module), the number of surfaces exchanging with other surfaces increased a lot. An approximate linear version of the longwave exchanges between any two surfaces is now used. Such an approximation is classicaly used in buildings energetics codes. The approximation is good when emissivities are high (typically larger than 0.9), which is the case for most surfaces, except for metal ones. \\
+
+The net Longwave budget for surface S1 due to the exchange of energy between surfaces S1 and S2 is now simulated as :
+
+\begin{equation}
+L_{S_1\; {\rm from} \; S_2} = 4 \sigma \epsilon_{S_1} \epsilon_{S_2} \Psi_{S_1S_2}\left(\frac{1}{2}(T_{S_1}+T_{S_2})\right)^3 \left(T_{S_2}-T_{S_1}\right)
+\end{equation}
+
+Where $\epsilon_{S_*}$ are the emissivities of each surface, $\sigma$ is the Stefan constant, $T_{S_*}$ the temperature of each surface, and $
+\Psi_{S_1S_2}$ the view factor under which surface $S_1$ sees surface $S_2$. For the exchanges with the sky, a sky temperature is defined from the incoming downwards longwave radiation, $L^\downarrow$, assuming (formally) an emissivity of 1, $T_{sky} = \left(L^\downarrow/\sigma\right)^\frac{1}{4}$.\\
+
+The view factors are needed.
+They are computed for the TEB geometry (an infinite
+canyon) according to Noilhan (1981)\nocite{Noilhan1981}:
+\begin{eqnarray}
+\Psi_r&=&[(h/w)^2+1]^{1/2}-h/w\\
+\Psi_w&=&\frac{1}{2}\{h/w+1-[(h/w)^2+1]^{1/2}\}/(h/w)
+\end{eqnarray}
+These factors represent the fraction of sky seen from the road and
+one wall respectively, compared
+to the sky fraction that a flat horizontal surface would see
+without obstruction. The sky-factor
+for the roof is then equal to 1. If the buildings are very low, $\Psi_r$ tends
+to 1 and $\Psi_w$ to 0.5 (one wall then sees one half of the sky).
+In this case, longwave radiative fluxes from the roads
+will be undisturbed by the walls. On the contrary, if the
+buildings are very tall, both sky factors tend to zero, and radiative exchanges
+will mostly occur between the walls, and less energy will escape towards
+the sky.
+\\
+
+The net longwave radiation absorbed by the snow-free road and wall surfaces is given by the following equations. 
+
+\begin{equation}
+\begin{array}{llllll}
+L_{r}^* = && 4 \sigma \epsilon_{r} &\Psi_{r} &\left(\frac{1}{2}(T_{sky}+T_{r})\right)^3 & \left(T_{sky}-T_{r}\right) \nonumber \\
+			       & + &  4 \sigma \epsilon_{r} \epsilon_{w} &\frac{1}{2}(1-\Psi_{r})(1-f_{win})&\left(\frac{1}{2}(T_{w_A}+T_{r})\right)^3 & \left(T_{w_A}-T_{r}\right) \\
+			       & + &  4 \sigma \epsilon_{r} \epsilon_{w} &\frac{1}{2}(1-\Psi_{r})(1-f_{win})&\left(\frac{1}{2}(T_{w_B}+T_{r})\right)^3 & \left(T_{w_B}-T_{r}\right) \\
+			       & + &  4 \sigma \epsilon_{r} \epsilon_{w} &(1-\Psi_{r})f_{win}&\left(\frac{1}{2}(T_{win}+T_{r})\right)^3 & \left(T_{win}-T_{r}\right) \label{Lr} \\
+L_{w_A}^* = && 4 \sigma \epsilon_{w} &\Psi_{w} &\left(\frac{1}{2}(T_{sky}+T_{w_A})\right)^3& \left(T_{sky}-T_{w_A}\right) \nonumber \\
+		   & + &  4 \sigma \epsilon_{r} \epsilon_{w} & \Psi_{w}\delta_{road}(1-{\delta_{snow}}_r)&\left(\frac{1}{2}(T_{r}+T_{w_A})\right)^3& \left(T_{r}-T_{w_A}\right) \nonumber \\
+     & + &  4 \sigma \epsilon_{r_{snow}} \epsilon_{w} &\Psi_{w}\delta_{road}{\delta_{snow}}_r &\left(\frac{1}{2}(T_{r_{snow}}+T_{w_A})\right)^3& \left(T_{r_{snow}}-T_{w_A}\right) \nonumber \\
+		   & + &  4 \sigma \epsilon_{r} \epsilon_{w} & \Psi_{w}\delta_{garden}&\left(\frac{1}{2}(T_{garden}+T_{w_A})\right)^3& \left(T_{garden}-T_{w_A}\right) \nonumber \\
+     & + &  4 \sigma \epsilon_{w}^2 &(1-2 \Psi_{w})(1-f_{win})&\left(\frac{1}{2}(T_{w_B}+T_{w_A})\right)^3& \left(T_{w_{B}}-T_{w_A}\right) \\
+     & + &  4 \sigma \epsilon_{w}^2 &(1-2 \Psi_{w})f_{win}&\left(\frac{1}{2}(T_{win}+T_{w_A})\right)^3& \left(T_{win}-T_{w_A}\right)
+\end{array}
+\end{equation}
+
+
+By inverting the snow-covered and snow-free road characteristics in Eq. \ref{Lr}, the longwave radiative budget on top of snow mantel can be defined. To find the longwave balance of wall $B$, one inverts $A$ and $B$ indices. $\delta_{road}=f_{road}/(f_{road}+f_{garden})$ and $\delta_{garden}=f_{garden}/(f_{road}+f_{garden})$ are the fractions of road and garden relative to the canyon surface, respectively. \\
+
+To deduce Eqs \ref{Lr}, we used the fact that if $\Psi_r$ represents the contribution of
+the sky to the road viewing, then $(1-\Psi_r)$ is the contribution
+of the two walls.
+For the budget of one wall, the sky-view factor is $\Psi_w$, the road view factor
+is $\Psi_w$ (per symmetry), and the facing wall view factor is $(1-2\Psi_w)$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Solar radiation}\label{solar}
+
+\subsubsection{Diffuse solar radiation}
+
+Diffuse solar radiation $S_\star^\downarrow$ is supposed to reach each surface according to the sky view factors of each surface  $S_\star^\downarrow = \Psi_\star S^\downarrow$. A part of this energy is reflected, depending on the albedo of each surface $\alpha_\star$. The reflected energy can then be again absorbed by the other surfaces, and so on. This is described in section \ref{reflect}. \\ 
+
+
+\subsubsection{Direct solar radiation for averaged directions}
+
+Because of shadow effects, special computations are required to
+estimate the solar flux
+received either by the walls or the roads.
+
+Let $S^\Downarrow$ be the direct solar radiation received by an {\bf horizontal} surface
+at the first atmospheric model level. The roof surface receives this
+amount of radiation.
+
+Let $\theta$ be the angle between the sun direction and the canyon axis, and
+$\lambda$ be the solar zenith angle (from zenith).
+Let us first consider a road perpendicular to the sun direction
+($\theta=\frac{\pi}{2}$, Figure \ref{solar1}).
+$\lambda_0={\rm arctan}(w/h)$ is defined as the zenith angle for which the sun begins to
+illuminate the road. It can be noted that whatever the sun position, one of the two walls
+is in shadow, the other one is (partially) in light.
+
+The mean direct solar fluxes received by both walls and by the road,
+for a street direction perpendicular to the sun, are:
+
+\begin{eqnarray}
+S_w^\Downarrow (\theta=\frac{\pi}{2}) &=&\left\{\begin{array}{ll}
+\frac{1}{2} \frac{w}{h} S^\Downarrow& \hspace*{1.cm} if\; \lambda > \lambda_0 \nonumber \\
+\frac{1}{2} {\rm tan}(\lambda) S^\Downarrow& \hspace*{1.cm} if\; \lambda < \lambda_0 \nonumber
+\end{array}
+\right.
+\nonumber \\
+S_r^\Downarrow (\theta=\frac{\pi}{2})&=& \left\{\begin{array}{ll}
+0&if\; \lambda > \lambda_0 \nonumber \\
+\left( 1 - \frac{h}{w}{\rm tan}(\lambda)\right)S^\Downarrow& if\; \lambda <
+\lambda_0
+\end{array}
+\right.
+\nonumber
+\end{eqnarray}
+
+
+
+
+
+In order to take into account the other canyon orientations, one should
+replace $w$ by $w/{\rm sin}(\theta)$ in the above expressions, and then 
+multiply the wall fluxes by ${\rm sin}(\theta)$.
+Then let $\theta_0$ be the critical canyon orientation for which
+the road is no longer in the light (or for which the radiation is minimum
+if the sun is high enough), i.e.:
+
+\begin{displaymath}
+\theta_0 = {\rm arcsin}\left({\rm min}\left[\frac{w}{h}\frac{1}{{\rm tan}(\lambda)};1\right]\right)
+\end{displaymath}
+
+Averaging a flux with respect to the canyon orientation is performed
+with two integrations, one between $\theta=0$ and $\theta=\theta_0$,
+and the other one between $\theta=\theta_0$ and $\theta=\frac{\pi}{2}$.
+The direct solar fluxes for walls, roads and roofs then read:
+
+\begin{eqnarray}
+S_r^\Downarrow = &{S^\Downarrow}& \left[\frac{2\theta_0 }{\pi}
+ - \frac{2}{\pi} \frac{h}{w} tan(\lambda)
+    \left( 1-{\rm cos}(\theta_0)\right)\right] \\
+S_{garden}^\Downarrow = &S_r^\Downarrow & \\
+S_w^\Downarrow = &{S^\Downarrow}& \left[
+   \frac{w}{h}\left(\frac{1}{2}- \frac{\theta_0}{\pi}\right)
+ + \frac{1}{\pi} tan(\lambda)
+    \left(1-{\rm cos}(\theta_0)\right)\right]  \\
+{S_{win}^\Downarrow} = &{S_w^\Downarrow}&  \\
+{S_R^\Downarrow} = &{S^\Downarrow}&  
+\end{eqnarray}
+
+Note that from the previous equations, one can check
+the conservation relation ${S_r^\Downarrow} + 2 \frac{h}{w}{S_w^\Downarrow} = {S^\Downarrow}$.\\
+
+\begin{figure}[t]
+\hspace*{0.cm}
+\psfig{figure=\EPSDIR/solar1.eps,width=16cm}
+\caption{Solar radiation input for a road perpendicular to the sun azimuth.
+In the TEB scheme, the contribution of all the other road directions
+are averaged with this one.
+\label{solar1}}
+\end{figure}
+
+
+\subsubsection{Direct solar radiation for a given canyon direction}
+
+When the road direction is taken into account, the amount of energy received is not the same for both walls.
+One is shaded (per convention here it will be wall $B$, but it depends in the model of the azimuthal position of the sun relative to the axis of the road), and the other one is under sunlight (at least partially).
+The formulae for the direct solar energy received are then (see Lemonsu \etal 2012\nocite{Lemonsu2012} for details) :
+
+\begin{eqnarray}
+	S_r^\Downarrow = &{S^\Downarrow}& {\rm max} \left[0\; ,1 -  \frac{\frac{h}{w}tan(\lambda)}
+{sin|\theta_{sun}-\theta_{can}|}\right] \\
+S_{garden}^\Downarrow = &S_r^\Downarrow & \\
+S_{w_A}^\Downarrow = &{S^\Downarrow}& - S_r^\Downarrow \frac{w}{h} \\
+S_{w_B}^\Downarrow = &0& \\
+S_{win}^\Downarrow = &\frac{1}{2}(S_{w_A}^\Downarrow + S_{w_B}^\Downarrow)&
+\end{eqnarray}
+
+
+
+\subsubsection{Solar radiation reflectionsi\label{reflect}}
+
+The scattered solar radiation received by the surfaces ($S_\star^\downarrow$)
+is directly deduced from the sky-view factors. Because of the canyon shape
+and the possible high albedo of the surfaces (white paint, snow),
+the shortwave radiative budget is computed
+by resolving a geometric system for
+an infinite number of reflections. The reflections
+are assumed to be isotropic: there is no specular reflection
+in this model. Details of the following calculations are given in Appendix
+A for the simpler case with averaged canyon direction (no difference between wall $A$ and $B$). 
+The complete demonstration is given in Lemonsu \etal 2012\nocite{Lemonsu2012}. \\
+
+The total solar radiation absorbed by each of the surface types is given by :
+
+{\footnotesize
+\begin{eqnarray}
+\mathcal{A}_r(\infty)     & = & (1-\alpha_r)\left[S^\Downarrow_r + S^\downarrow_r+ (1-\Psi_r)W_\infty\right] \nonumber\\
+	\mathcal{A}_{snow_r}(\infty)  & = & (1-\alpha_{snow_r})\left[S^\Downarrow_r +S^\downarrow_r + (1-\Psi_r)W_\infty\right] \nonumber\\
+\mathcal{A}_g(\infty)     & = & (1-\alpha_g)\left[S^\Downarrow_r +S^\downarrow_r + (1-\Psi_r)W_\infty\right] \nonumber\\
+	\mathcal{A}_{w_A}(\infty) & = & (1-\alpha_w)\left[\frac{{1}}{{2}}(S^\Downarrow_{w_A}+S^\downarrow_{w_A}+S^\Downarrow_{w_B}+S^\downarrow_{w_B}) + \tilde{\alpha}_{ground}\Psi_w  (S^\Downarrow_r+S^\downarrow_r) \right. \nonumber\\
+		&   & \left. + \tilde{\alpha}_{ground}\Psi_w(1-\Psi_r) W_\infty + (1-2\Psi_w) W_\infty \right]                                                   \nonumber\\
+		&   & + \left[(1-\alpha_w)\left(1+\frac{\tilde{\alpha}_{fac}(1-2\Psi_w)}{1 + \tilde{\alpha}_{fac}(1-2\Psi_w)}\right)  \frac{S^\Downarrow_{w_A}+S^\downarrow_{w_A}-S^\Downarrow_{w_B}-S^\downarrow_{w_B}}{2}\right] \nonumber\\
+	\mathcal{A}_{w_B}(\infty) & = & (1-\alpha_w)\left[\frac{{1}}{{2}}(S^\Downarrow_{w_A}+S^\downarrow_{w_A}+S^\Downarrow_{w_B}+S^\downarrow_{w_B}) + {\tilde{\alpha}_{ground}}\Psi_w  (S^\Downarrow_r+S^\downarrow_r) \right. \nonumber\\
+		&   & \left. + \tilde{\alpha}_{ground}\Psi_w(1-\Psi_r) W_\infty + (1-2\Psi_w) W_\infty \right]                                                   \nonumber\\
+      &   & - \left[(1-\alpha_w)\left(1+\frac{\tilde{\alpha}_{fac}(1-2\Psi_w)}{1 + \tilde{\alpha}_{fac}(1-2\Psi_w)}\right)  \frac{S^\Downarrow_{w_A}+S^\downarrow_{w_A}-S^\Downarrow_{w_B}-S^\downarrow_{w_B}}{2}\right] \nonumber\
+\nonumber \\
+{\rm with} \nonumber \\
+\nonumber \\
+W_\infty &=& \frac{\tilde{\alpha}_{fac}(S^\Downarrow_{w_A}+S^\downarrow_{w_A}+S^\Downarrow_{w_B}+S^\downarrow_{w_B})/2 + \tilde{\alpha}_{fac}\Psi_w\tilde{\alpha}_{ground}(S^\Downarrow_r+S^\downarrow_r)}
+{1 - \tilde{\alpha}_{ground}\tilde{\alpha}_{fac}\Psi_w(1-\Psi_r) - \tilde{\alpha}_{fac}(1-2\Psi_w)} \nonumber  
+\end{eqnarray}
+}
+
+Where $\tilde{\alpha}_{fac} = f_{win}\alpha_{win} + (1-f_{win})\alpha_w$ and $\tilde{\alpha}_{ground} = \delta_{road}\left((1-\delta_{snow_r})\alpha_{road} + \delta_{snow_r}\alpha_{snow_r}\right) + \delta_{garden}\alpha_{garden}$ are the {\bf agregated albedo} of the facade (wall+window) and canyon ground (road+garden), respectively. \\
+
+Solar energy reaching the windows $\mathcal{A}_{win}$ is then given by the averaged value of energy received by walls A and B (by formally replacing $(A-\alpha_w)$ by $(1-\alpha_{win})$ in the formula). Note that all this energy will not be absorbed by the window, since part of it will reach the interior of the building (see the BEM section for details). Similarly, the solar energy {\it reaching} the garden is deduced from the one absorbed by the road $\left[S^\Downarrow_{garden}+S^\downarrow_{garden}  + (1-\Psi_r)W_\infty\right]$. \\
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Anthropogenic fluxes}
+
+Due to human activity, heat and moisture are released towards the atmosphere.
+The two main sources come from domestic heating and from combustion.\\
+
+Domestic heating is explicitly resolved by assuming a constant
+minimal internal temperature, whatever the external temperature.
+The default value is 290.15~K. The heat is then released towards
+the wall/roof surfaces and then towards the atmosphere through the
+conduction flux formulation.\\
+
+The combustion source is split into two contributions in the TEB model:
+traffic and industry.
+For each, the heat and moisture fluxes, averaged on the town surface
+($H_{traffic}$ and $LE_{traffic}$, $H_{industry}$ and $LE_{industry}$),
+are specified by the user (from available information on
+the town activity).
+
+However, these fluxes do {\bf not} directly modify the surface energy budgets
+since they are released into the air.
+The traffic related fluxes will modify the canyon air budget
+(they are incorporated in Equation \ref{CanyonFlux}, see next section).
+The industry fluxes are assumed to 
+influence the atmosphere directly.\\
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Turbulent fluxes for momentum}\label{turb}
+
+\subsubsection{Treatment of the urban roughness sublayer}
+
+In this section, the method to compute the turbulent
+fluxes between the surfaces and the atmospheric model
+will be presented. The resolution of the atmospheric model is far
+too low to be able to represent the urban roughness sublayer motions,
+as it applies to the mesoscale.
+The atmospheric models do not usually parameterize the
+exchange processes in this layer: it is done by the
+surface scheme. If the first atmospheric level is  outside
+the roughness sublayer, the traditional surface
+layer formulations can be used to compute the turbulent fluxes.
+The problem is that the roughness sublayer can have a substantial extension
+over an urban surface (several tens of meters), and the
+first level of the atmospheric model (often a couple of tens of meters)
+is often within it.\\
+
+It is therefore necessary to have a closer look to the parameterization
+of the fluxes. Feigenwinter \etal (1999)\nocite{Feigenwinter1999} conducted measurements
+on a 50m height mast in the city of Basel (Switzerland). The
+authors found that the mechanical properties in the roughness sublayer
+(such as profiles of velocity variances, non-dimensionalized velocity
+variances and spectra of wind components) behave similarly to rural
+surface layers. Furthermore, they concluded that
+these quantities are quite well parameterized
+within the Monin-Obukhov similarity theory, if local
+Monin-Obukhov length is applied.
+
+Following their results, the TEB scheme computes the {\bf momentum fluxes}
+{\bf for the entire urban (or suburban) cover}.
+
+The momentum fluxes can be computed using two main approaches:
+
+\subsubsection{The drag approach with the Surface Boundary Layer scheme}
+
+In this case, the wind, temperature, moisture and turbulent kinetic energy profiles are defined within and above the canyon. The friction is not explicitly calculated by a single formulation, but simulated but the effect of the drag force of the buildings (see section \ref{SBL_TEB}) for more details.
+
+\subsubsection{The roughness length approach}
+
+More classicaly, when the SBL scheme is not used, a roughness length formulation taking into account stability coefficients is used.
+The stability coefficients that are available in TEB are:
+ \begin{itemize}
+\item Brutsaert (1982) \nocite{Brutsaert1982}
+\item Mascart \etal (1995)\nocite{Mascart1995}
+\item Kondo \etal  (2007)\nocite{Kondo2007}
+ \end{itemize}
+ We recommend to use the Kondo \etal (2007) formulation, that was derived specifically for urban areas. \\
+
+The momentum fluxes are computed for the entire urban surface.
+However, one difficulty lies in the determination of the roughness length
+to use in urban areas. Wieringa (1993) reviewed
+some experimental roughness length estimations for rather
+homogeneously built-up areas. Dense low building roughness lengths
+were found between 0.4 and 0.7m, and those for 
+regularly-built towns ranged from
+0.7 to 1.5m. In these experiments, they are approximately equal to 1/10
+of the houses or building heights. Bottema (1997)\nocite{Bottema1997} 
+presents a model computing roughness lengths from building shapes and
+relative positions (normal or staggered). He found the modeled
+$z_{0_{town}}$ to be in agreement with the available measurements. Sensitivity
+experiments of his model show that the ratio $z_{0_{town}}/h$ ranges from
+0.05 to 0.1 (except for very sparsely built areas). Therefore, as a first
+approximation, the roughness length in the TEB model is set equal to:
+\begin{displaymath}
+z_{0_{town}} = h/10
+\end{displaymath}
+(with an arbitrary limit of 5m), but it can be
+specified independently, either from in-situ measurements
+or more complicated formulations (see for example the review
+of Grimmond (1999)\nocite{Grimmond1999}).
+
+\subsection{Turbulent fluxes for heat and moisture}\label{turb}
+
+\subsubsection{Considerations on the turbulent transfer of heat and moisture}
+
+In contrast, Feigenwinter \etal (1999) found that the temperature
+characteristics, and in particular the turbulent heat flux, cannot be
+satisfactorily reproduced by the Monin-Obukhov similitude framework.
+They attribute this discrepancy to 'thermal inhomogeneity and/or
+different source areas'. The use of one unique surface exchanging heat
+with the atmosphere (the classical surface layer approach) becomes
+debatable.
+
+The approach of the TEB scheme is to suppose that there are {\bf two}
+major sources of heat from the artificial cover
+towards the atmosphere, leading to {\bf two}
+turbulent heat fluxes. These two different surfaces are the
+{\bf roofs} on the one hand,
+and the {\bf canyon systems} on the other hand (see Figure \ref{flux}).
+The two flux contributions are averaged relative to their horizontal
+areas: this is a way to represent the mixing in the urban roughness
+sublayer.\\
+
+
+Both for roof and roads, one will also explicitly
+suppose that the transfer coefficient for turbulent
+heat and moisture fluxes are identical (but different than for momentum).
+Very few direct measurements of turbulent moisture fluxes exist
+in the literature to validate or invalidate this hypothesis.
+
+\subsubsection{Exchange coefficients between surfaces and atmosphere}
+
+All heat and moisture fluxes are computed using exchange coefficient, based on aerodynamical resistances (or conductances), and the difference between the surface temperature of the considered surface (roof, road, wall) and the air temperature (either above roof or in the canyon). \\
+
+The horizontal surfaces use formulations that take into account vertical atmospheric stability effects. While this is is questionable for roofs (where air turbulence even at proximity of the surface is strongly influenced by the buildings shape, this is probably pertinent for roads. The three possible formulations to compute the aerodynamical resistances $RES_{R}$ and $RES_{r}$ are: \\
+\begin{itemize}
+\item Brutsaert (1982) \nocite{Brutsaert1982}
+\item Mascart \etal (1995)\nocite{Mascart1995}
+\item Kondo \etal  (2007)\nocite{Kondo2007}
+\end{itemize}
+Between these three, we recommend Kondo \etal (2007), that was specifically developed for cities.
+Please note that there is also another possible option for roofs (see below). \\
+
+These formulations are used either for roads (with roughness length of 5cm) or roofs (with roughness length of 15cm, as observed by Sturrock \etal (1977)\nocite{Sturrock1977}). However, the flow inside the canyon being often highly turbulent even for low wind speeds. One takes into account in the wind estimation inside the canyon for the exchange coefficients formulation. Both the mean wind ($U_{can}$, see below for its estimation) and a turbulent scale due to local canyon convection ($w_*=\left ( \frac{g}{T_{can}}Q_{0}h \right )^{1/3}$) are then used, combined as an 'effective' canyon wind equal to : $\sqrt{U_{can}^2+(u_{*}+w_{*})^2}$, Where $u_{*}+w_{*}$ is the turbulent wind and $Q_{0}$ encompasses both road and wall turbulent heat fluxes. \\
+
+When the SBL scheme is not used, one also need to compute the heat and moisture fluxes between the canyon air and the atmosphere above. This is done using the same formulations as above (leading to the estimation of canyon resistance, noted $RES_{top}$), but using the roughness lentgh for the whole urban fabric (the same as for the momentum formulation), instead of the surface roughness lengths.\\
+
+For walls, two formulations are available. The first one is  the Rowley \etal (1930)\nocite{Rowley1930} and Rowley \etal (1932)\nocite{Rowley1932} aerodynamic formulations. They were obtained from in-situ measurements. These formulae are also used in the canyon circulation model of Mills (1993). It writes:
+\begin{eqnarray}
+RES_{w} = & C_{p_d} \rho_a &  \left(11.8 + 4.2 U_{can}\right)^{-1}
+\end{eqnarray}
+
+For buildings, a recent development in the model was to introduce a formulation of the exchanges coefficients directly dereived from state-of-the-art codes in Building energetics (energy+), by Pigeon \etal (2014)\nocite{Pigeon2014}. This is the DOE-2 option (description in http://apps1.eere.energy.gov/buildings/energyplus/pdfs/engineeringreference.pdf). It takes into account the windward and leeward effects on exchange coefficients. Those coefficient lead to coefficient generally 2.5 times smaller than the other formulations.
+
+The DOE-2 option can then be chosen for roof $RES_{R}$ and wall $RES_w$ exchange coefficients, in place of the stability fgunction and Rowley formulations, respectively. \\
+
+All possible options are summarized in Table \ref{RES_urban}.\\
+\begin{table}
+\begin{tabular}{l|ccccc}
+	\hline
+	& roofs & roads & walls & windows &canyon air and above  \\
+	&       &       &       & (if BEM) &(if not SBL scheme) \\
+	\hline
+	Brutsaert (1982) & X ($z_0=$15cm) & X ($z_0=$5cm) & & & X ($z_{0_{town}}$) \\
+	Mascart   (1995) & X ($z_0=$15cm) & X ($z_0=$5cm) & & & X ($z_{0_{town}}$) \\
+	Kondo \etal (2007) & X ($z_0=$15cm) & X ($z_0=$5cm) & & & X ($z_{0_{town}}$) \\
+	Rowley (1930) & &  & X && \\
+	DOE-2 & X &  & X & X & \\
+	\hline
+\end{tabular}
+\caption{Possible options for exchanges coefficients\label{RES_urban}}
+\end{table}
+
+\subsubsection{Heat fluxes}
+
+The effect on temperature and specific humidity of the difference in height between the atmospheric level and the roof level is corrected using the Exner function $\Pi=(p/p0)^{R_d/C_{p_d}}$, where $p$ is the pressure ($p_s$ and $p_a$ are the surface pressure and the first level pressure in the atmospheric model respectively), $p_0$ is a reference pressure (equal to 100000 Pa), and $R_d$ the gas constant for dry air. One defines:
+\begin{eqnarray}
+\hat{T_a} =& T_{a}\Pi_s/\Pi_a  \nonumber \\
+\hat{q_a} =& q_a \; q_{_{sat}}(\hat{T_{a}},p_s) /
+q_{_{sat}}(T_{a},p_a) \nonumber
+\end{eqnarray}
+
+The heat and moisture turbulent fluxes between roof and atmosphere read:
+\begin{eqnarray}
+H_{R} =& C_{p_d} \rho_a &(\hat{T_a} - T_{can}) / RES_{R} \nonumber \\
+LE_{R} =& L_{v} \rho_a & (\hat{q_a} - q_{can}) / RES_{R} \nonumber
+\end{eqnarray}
+where $\rho_a$ is the air density at first atmospheric level, and $C_{p_d}$
+the heat capacity of dry air.
+
+
+The heat fluxes between the canyon surfaces and the canyon air read:
+\begin{eqnarray}
+H_{r} =& C_{p_d} \rho_a &(T_{r} - T_{can}) / RES_{r} \nonumber \\
+H_{w} =& C_{p_d} \rho_a &(T_{w} - T_{can}) / RES_{w} \nonumber \\
+LE_{r} =& L_{v} \rho_a &\delta_{r}({q_{_{sat}}}(T_{r},p_s) - q_{can}) / RES_{r} \nonumber \\
+LE_{w} =& 0\nonumber
+\end{eqnarray}
+
+
+The turbulent heat fluxes between the canyon air and the
+atmosphere are computed
+from the temperature and humidity inside the canyon.
+The fluxes between surfaces and canyon air follow an empirical formulation.
+The air characteristics inside the canyon are deduced from the continuity
+between the fluxes coming from the surfaces and the flux with the atmosphere
+(inspired by the vegetation canopy scheme of Deardorff (1978)).
+
+The heat fluxes are used in the
+energy budget conservation equations involving the surface temperatures.
+This is why a precise approach has been chosen, specific to each surface.
+Figure \ref{flux} displays a summary of the TEB options.\\
+
+Above the canyon, the fluxes are estimated from classical surface boundary
+layer laws. However in these formulae, the air characteristics
+in the canyon ($T_{can}$ and $q_{can}$)
+are used instead of the surface characteristics.
+
+\begin{eqnarray}
+H_{top} =& C_{p_d} \rho_a &(\hat{T_a} - T_{can}) / RES_{top} \nonumber \\
+LE_{top} =& L_{v} \rho_a & (\hat{q_a} - q_{can}) / RES_{top} \nonumber
+\end{eqnarray}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Water reservoirs evolution}
+
+Liquid or solid precipitation intercepted by urban surfaces is
+rarely addressed in the literature,
+except for sewer system and hydrological considerations.
+An exception is Grimmond \etal (1991b)\nocite{Grimmond1991b}, however,
+in which
+the model used was initially dedicated to forest studies,
+and is limited to the water budget, computed from the
+Penman Monteith equation. They added anthropogenic water sources
+and used the Grimmond \etal (1991a) heat storage flux
+formulation.\\
+
+Thanks to the presence of the surface temperatures in the TEB
+scheme, the saturation specific humidity, and then
+the turbulent latent heat flux can be computed more easily
+(see section \ref{turb}).
+
+The liquid precipitation is intercepted by both roofs and roads.
+There is runoff from roofs and roads to the sewer system.
+Roads and roofs can be covered by a certain amount of water,
+parameterized by the variables $W_{r}$ and $W_{R}$, respectively.
+These surfaces are impervious. Then, instead of defining a relative humidity,
+it is more judicious to treat the fraction of surface covered by the water,
+$\delta_{water_r}$ and $\delta_{water_R}$. This part is saturated
+(fractional water pools), while the other part is assumed to be dry.
+Water evaporates
+when the air humidity is  not saturated until all water has disappeared
+from the impervious surface.
+
+The snow-free fraction of the surface occupied by liquid water is computed as:
+$\delta_{water_\star}= (W_\star/W_{\star_{max}})^\frac{2}{3}$, (Noilhan and Planton (1989)\nocite{Noilhan1989}), where
+$W_{\star_{max}}$ is the maximum water amount on the surface.\\
+
+Furthermore, urban dew
+is taken into account (in case of negative latent heat flux),
+as its occurrence
+can have significant effects, as pointed
+out by Richards (1998)\nocite{Richards1998}.
+It requires a special treatment: when conditions are present
+for dew to occur (air humidity larger than the surface saturation
+humidity), the surface is considered wet ($\delta_{water_*}=1$). This allows
+then a (negative) latent heat flux, which can fill the interception reservoirs.
+These treatments are deduced from those for the foliage interception reservoirs
+in vegetation schemes (Deardorff (1978)\nocite{Deardorff1978}, Noilhan and Planton (1989)).\\
+
+Addition of an anthropogenic water source was not retained in TEB,
+because it does not compute evaporation over gardens or parks.
+Irrigation water input should be taken into account through the vegetation
+scheme dedicated to these natural surfaces. However, anthropogenic fluxes
+of water vapor directly into the air exist in the scheme (see section
+\ref{turb}), in order to represent factory release for example.\\
+
+Finally, the water-reservoir evolution equation is (for roof or road):
+
+\begin{equation}
+\frac{\partial W_\star}{\partial t} = R - LE_\star / L_v 
+\hspace*{2.cm}(W_\star < W_{\star_{max}})
+\end{equation}
+where $R$ is the rain rate (kg m$^{-2}$ s$^{-1}$)
+and $L_v$ is the latent heat of vaporization.
+
+The reservoirs are of small capacity (the water in excess is lost as runoff). 
+They are set equal to $W_{R_{max}}$=$W_{r_{max}}$=1 kg m$^{-2}$, which is well
+in the range of values explored by Grimmond and Oke (1991).
+The total depletion of the reservoirs by evaporation requires, in general,
+a few hours for daytime conditions.\\
+
+Additionnaly, the water during rainfall is supposed to fall at the temperature of the air. Therefore, because there is no specific energy budget for the water reservoirs, the rainfall water is supposed to instantaneously take the temperature of the surface (roof or road). This induces an immediate sensible heat flux (contrary to the future latent heat flux that will be caused by evaporation). This heat flux, that is immediatly incorporated into the corresponding surface layer (roof or road) heat budget, is equal to :
+
+\begin{equation}
+H_{{rain}_\star} = C_{water} R (T_a - T_\star)
+\end{equation}
+
+where $C_{water}$ is the heat capacity of water, supposed equal to 4218 $J\,kg^{-1}\,K^{-1}$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Snow effects}
+
+Snow is intercepted by roofs and roads. A snow
+scheme is implemented on each surface type. Snow density, albedo, temperature
+and thickness of water equivalent depth are parameterized. Radiation, sensible heat flux, sublimation, conduction
+and melting are taken into account.
+
+The evolution rate of snow albedo is enhanced (and its minimum value lowered)
+in order to represent car pollution (dirty snow).
+A time-dependent drainage term is included to take into account
+snow-plow work (if any).
+
+The snow fraction on roof or road surfaces
+is set equal to a function of the snow interception reservoir (${W_{snow}}_*$):
+${\delta_{snow}}_*= ({W_{snow}}_*)/({W_{snow}}_*+{{W_{snow}}_*}_{max})$.
+The parameter ${{W_{snow}}_*}_{max}$ is set equal to 1 kg m$^{-2}$.
+The snow has an effect on:
+\begin{itemize}
+\item the energy budget of the surfaces (as part
+of the downward flux comes from the base of the snow),
+\item the heat fluxes from the road towards the canyon or from the roof towards
+the atmosphere,
+\item the radiative calculations for the canyon surfaces, because
+of the snow albedo, emissivity and temperature.
+\end{itemize}
+
+\subsection{Atmospheric quantities inside the canyon}
+
+In order to compute the momentum and energy fluxes of the different surfaces, one needs to know the air temperature, humidity and wind speed in the canyon and above the surfaces. Depending if the Surface Boundary Layer scheme is active or not, there are two ways to estimate these. \\
+
+\subsubsection{In the case of the Surface Boundary Layer scheme}
+
+In this case, the wind, temperature and humidity profiles are known. For the roof fluxes computations, one uses the atmospheric quantities at the first SBL layer above the roof.  For the road fluxes computations, one uses the atmospheric quantities at the first SBL layer, typically 50cm above ground. For the wall fluxes computations, one uses the atmospheric quantities at middle height of the canyon, interpolated from the SBL levels. \\
+
+
+\subsubsection{Wind inside the Canyon}
+
+In the absence of the SBL scheme (and associated profiles), one needs to estimate the wind, air temperature and humidity at mid height of the canyon, in order to compute the road and wall fluxes. Roof fluxes are directly computed using the information at forcing level. \\
+
+The horizontal wind speed, $U_{can}$, is estimated at half the height of the canyon.
+First, the horizontal wind speed at the top of the canyon is deduced from
+the logarithmic law above it (Figure \ref{flux}, right side), and
+the displacement height is equal to two thirds of the building height
+from road surface (i.e. at $h/3$ under the roof level -
+which is the zero height of the atmospheric model -, a classical
+assumption for plant canopies).
+Furthermore, in order
+to consider all canyon orientations, and since only the along canyon wind is
+considered, an integration over 360$^\circ$ is performed. At canyon
+top, this gives:
+\begin{displaymath}
+U_{top} = \frac{2}{\pi} \frac{{\rm ln}\left(\frac{h/3}{z_{0_{town}}}\right)}
+{{\rm ln}\left(\frac{\Delta z+h/3}{z_{0_{town}}}\right)} ||\vec{U_a}||
+\end{displaymath}
+where $\Delta z$ is the height of the first atmospheric model level above
+the roofs.
+
+To calculate $U_{can}$, a vertical profile of the wind inside the canyon
+is assumed.
+An exponential form is chosen (as is done in vegetation canopies,
+cf e.g. Arya (1988)\nocite{Arya1988}). Such a profile applied at half-height
+gives:
+\begin{displaymath}
+U_{can} = U_{top} {\rm exp}(-N/2)
+\end{displaymath}
+$N$ must be determined.
+Rotach (1995)  finds from his case study ($h/w=1$), that
+$U_{can} \sim 0.75 U_{top}$.
+Studies in corn fields ($h/w\sim 4$), which could be assimilated to narrow
+streets, give $U_{can} \sim 0.4 U_{top}$ (Arya 1988).
+Therefore, the parameter $N= 0.5 h/w$ should be pertinent.
+
+Then:
+\begin{equation}
+U_{can} = \frac{2}{\pi} {\rm exp}\left(-\frac{1}{4}\frac{h}{w}\right) 
+\frac{{\rm ln}\left(\frac{h/3}{z_{0_{town}}}\right)}
+{{\rm ln}\left(\frac{\Delta z+h/3}{z_{0_{town}}}\right)} ||\vec{U_a}||
+\end{equation}
+
+
+\subsubsection{Canyon temperature and humidity}
+
+These quantities can be considered as output of a meteorological forecast.
+They are computed diagnostically: the equilibrium between thermodynamic
+fluxes for the canyon air is assumed to be valid at each time step.
+{\bf The anthropogenic flux due to traffic is also taken into account}.
+Note that in this formula, $H_{traffic}$, representative of
+the whole urban surface, has been scaled to the road surface.
+
+
+\begin{eqnarray}\label{CanyonFlux}
+	H_{top} = \delta_r(1-{\delta_{snow}}_r) H_{r} + \delta_r{\delta_{snow}}_r {H_{snow}}_r 
++\delta_{garden}H_{garden}  \nonumber & + H_{traffic} \frac{1}{1-f_{bld}}&+ \frac{2h}{w}\left[(1-f_{win})H_{w} +f_{win}H_{win}\right]
+ \\
+&&\\
+ LE_{top} = \delta_r(1-{\delta_{snow}}_r)LE_{r} + \delta_r{\delta_{snow}}_r {LE_{snow}}_r+\delta_{garden}LE_{garden} &+ LE_{traffic}\frac{1}{1-f_{bld}}&
+        \nonumber \\
+&&
+\end{eqnarray}
+
+Then
+\begin{equation}
+	T_{can} = \frac{\delta_r(1-{\delta_{snow}}_r)\frac{T_r}{RES_r}+\frac{2h}{w} \left((1-f_{win})\frac{T_w}{RES_w}
+                          + f_{win} \frac{H_{win}}{C_{p_d}\rho_a} \right)
+                                 +\frac{\hat{T_a}}{RES_{top}}
+                                 +\frac{H_{traffic}}{C_{p_d}\rho_a (1-f_{bld})}
+				 +\delta_{garden}\frac{H_{garden}}{C_{p_d}\rho_a}
+                                 +\delta_r{\delta_{snow}}_r\frac{{H_{snow}}_r}{C_{p_d}\rho_a } }
+{\delta_r(1-{\delta_{snow}}_r)\frac{1}{RES_r}+\frac{2h}{w} (1-f_{win})\frac{1}{RES_w}
+                                 +\frac{1}{RES_{top}}}
+\end{equation}
+and
+\begin{equation}
+	q_{can} = \frac{  \delta_r(1-{\delta_{snow}}_r)\frac{\delta_{water_r}{q_{_{sat}}}(T_r,p_s) }
+                                            {RES_r}
+                + \frac{\hat{q_a}}{RES_{top}} 
+                + \frac{LE_{traffic}}{L_v\rho_a (1-f_{bld})} 
+	 +\delta_{garden}\frac{LE_{garden}}{L_v\rho_a}
+                + {\delta_r\delta_{snow}}_r\frac{LE_{r_{snow}}}{L_v\rho_a } }
+		{  \delta_r(1-{\delta_{snow}}_r)\frac{\delta_{water_r} }{RES_r}
+                + \frac{1}{RES_{top}} }
+\end{equation}
+
+\begin{figure}[t]
+\hspace*{0.cm}
+\psfig{figure=\EPSDIR/flux.eps,width=15cm}
+%\caption{Energy fluxes between the artificial surfaces and the atmosphere.
+\caption{Scheme options for: (a) aerodynamic resistances; (b)
+wind profile within and above the canyon.}
+\label{flux}
+\end{figure}
+
+\subsection{Averaged fluxes at town scale}
+
+As mentioned above, the averaging operation performed to obtain the
+turbulent fluxes at town scale is in itself a way to solve the problem
+of the roughness sublayer: it mimics the mixing of the different
+sources of turbulent heat fluxes, and then produces
+{\bf fluxes which are representative of
+the upper part of the surface layer}, above the roughness sublayer.
+The energy fluxes released by the industrial activities is also
+added at this stage.
+
+The total heat fluxes from the artificial material
+areas towards the atmosphere are then:
+
+\begin{eqnarray}
+H_{town} = f_{bld} H_{R} + (1-f_{bld}) H_{top} + H_{industry} \\
+LE_{town} = f_{bld} LE_{R} + (1-f_{bld}) LE_{top} + LE_{industry}
+\end{eqnarray}
+
+In order to have the total turbulent fluxes $H$, $LE$
+from the surface towards the atmospheric model,
+these fluxes should be averaged with those
+computed by the vegetation scheme for the other land surfaces
+(city parks, gardens, fields, forest, bare soil...) and
+those from water covered surfaces (rivers, lakes, sea...).
+
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Urban vegetation: gardens and greenroofs\label{garden}}
+\subsection{Philosophy of vegetation in TEB}
+
+Cities are not only composed of impervious surfaces. Urban vegetation plays an important role, of course in suburban areas, where gardens are often mixed within buildings and houses, but also in dense urban centers, with parks, street trees, and vegetated courtyard or small gardens. Vegetation in cities give to a lot of ecosystemic services, such as: 
+\begin{itemize}
+\item climatic effects: reduction of urban heat, runoff management
+\item absorption of CO$_2$
+\item biodiversity enhancement (both vegetal and animal)
+\item recreative locations
+\item prefered location for soft travel modes
+\item improvement of wellbeing and health, reduction of stress
+\item real estate improvement
+\item etc...
+\end{itemize}
+
+While of course it is not the aim of TEB to simulate all these effetcs, the importance of urban vegetation on micro-climate lead to simulate its role more precisely. However, the overall ecosystemic services of urban vegetation show why in most urban planning strategies, and especially in relation with adaptation to climate change, the question of vegetation is of prime importance. \\
+
+This is why in TEB we have developed the representation of urban vegetation, for garden (and ground vegetation in general) and greenroofs. The strategy was not to develop from scratch an urban vegetation model, but to couple TEB with ISBA, that is used in SURFEX for natural continental covers. This enable to capitalize on all the developments done in ISBA on the physics and biologics of plants. For example, this allows to simulate the CO$_2$ flux due to soil and plant respiration and photosynthesis. \\
+
+This means that ISBA can, for each grid point, be called several times independently: for the natural part of the grid mesh, for the garden, and for the greenroofs. Each occurrence of ISBA will have its own descriptive variables and prognostic variables (e.g. the soil moisture will be different in natural cover, on the greenroofs and in the garden). \\
+
+\subsection{Gardens}
+
+The main change is first the definition of the town fraction. This now includes the urban vegetation that interacts with the nearby buildings. This encompasses street trees, gardens, small parcks and green corridors. However, large parks, where most of the vegetation is far from the buildings and do not {\it directly} interact with them (no shadows for example), should still be included in the nature part of the grid mesh. The town part now contains the building fraction, the urban vegetation fraction, and the impervious surfaces (as roads, parkings) fraction (the sum of all three being equal to 1). The first impact to incorporate the vegetation within the town part of the grid mesh is that allows to {\bf more accurately described the urban morphology}. Indeed, the vegetation being included within the canyon, the space being the buildings is larger, and more coherent with the reality. This, in itself, modifies the simulation of all the processes already presented for the version of TEB without gardens (that most often depend on geometry). \\
+
+The other impacts are physical: the buildings send shadows on the gardens. This changes the solar radiation received by the vegetation. The infra-red radiation is also increased, due to the interactions with the walls. The vegetation also is sensitive to the canyon microclimate and influence it in return. All these effects are taken into account.  All details are given in Lemonsu \etal (2012)\nocite{Lemonsu2012}.
+
+\begin{enumerate}
+	\item First, radiative exchanges are computed between all the canyon surfaces, including now the vegetation, both for solar (still with an infinite number of reflections)(see section \ref{solar}), and infra-red (with the approximation of net exchanges between one surface and all of those that are seen by it, see section \ref{LW}). These radiative information is using the albedo, surface temperature and emissivity of the garden. Those quantities are estimated from previous time-step of the garden ISBA model. 
+	\item Then the solar and infrared radiation received by the garden (taking into account shadowing and radiative trapping by the canyon) are sent to ISBA, with all the other meteorological information (air temperature, humidity, wind, pressure, rainfall, snowfall) representative of the canyon. Please note here that the atmospheric data is estimated, not from the forcing level that is above the buildings, but from the middle of the canyon if no SBL scheme is used, or at first SBL level (typically 0.5m) if hte SBL scheme is used.
+\item ISBA computes the energy fluxes. Note here that all the physics of ISBA are available. For example, snow mantel in garden is simulated by the snow scheme chosen in ISBA. The reader should refer to the chapter describing the ISBA model for a description of all the processes in the model.
+\item Finally the turbulent and fluxes are sent back to the canyon, at the bottom of the canyon. These fluxes are averaged with the fluxes coming from the road, and then influence the rest of the canyon as the road fluxes do in the version of the model without gardens do.
+\end{enumerate}
+
+
+\subsection{Greenroofs}
+
+The  need  to  prepare  cities  for  climate  change adaptation  requests  the  urban  modeller  community  to  im-
+plement sustainable adaptation strategies within their models to be tested against specific city morphologies and scenarios. Greening city roofs is part of these strategies. In this context,  the  greenroof  module  for  TEB  (town  energy
+balance)  has  been  developed  to  model  the  interactions  between buildings and greenroof system at the scale of the
+city. This module, which combines the ISBA model (Interaction between Soil Biosphere and Atmosphere) and TEB,
+allows for one to describe an extensive greenroof composed of  four  functional  layers  (vegetation  –  grasses  or  sedums;
+substrate;  retention/drainage  layers;  and  artificial  roof  layers) and to model vegetation-atmosphere fluxes of heat, water and momentum, as well as the hydrological fluxes throughout  the  substrate  and  the  drainage  layers,  and  the  thermal fluxes throughout the natural and artificial layers of the greenroof. TEB-greenroof is therefore
+be  able  to  represent  the  impact  of  climate  forcings  on  the functioning of greenroof vegetation and, conversely, the influence of the greenroof on the local climate. \\
+
+The greenroof also modifies strongly the roof energy balance, since the surface energy budget is replaced by the conduction flux at the base of the greenroof retention/drainage layer. This impacts the buildings energetics a lot when the BEM module is active. The greenroof acts as a supplementary insulation layer in addition to the effect of cooling due to the increased evaporation. \\
+
+As  established  previously,  the  heat  and  water  transfers  involved in the natural layers of greenroofs (atmosphere, vegetation, and substrate and hydrological control layers) are similar to those of perfectly natural surfaces. They can therefore be simulated, as is the case in the models previously examined, by a standard soil and vegetation model, provided that it is calibrated to reflect the peculiar characteristics of the soil-forming materials used for the construction of greenroofs.
+Therefore, the strategy proposed and ultimately retained for the inclusion of greenroofs within TEB is to use a soil and vegetation model that can not only be calibrated for a specific  soil  but  would  also  have  the  ability  to  overcome  the limitations of existing models. The ideal model should allow for a coupled modelling of greenroof hydrological and energetic performances, employ sufficiently detailed parameterizations to describe the physical processes involved (including evapotranspiration and soil water flows), and at the same time have spatial resolutions (i.e. time calculations) suitable for modelling applications at city scale. \\
+
+
+\begin{figure}[t]
+\hspace*{0.cm}
+\psfig{figure=\EPSDIR/algo_greenroof.eps,width=15cm}
+\caption{Overall algorithm of greenroof and gardens in TEB}
+\label{garden}
+\end{figure}
+
+From a physical point of view, the main change in TEB induced by the implementation of greenroofs is the modification of the surface flux condition at the top of the roof. Instead of being computed from the surface energy balance (with the interaction of radiation, sensible and latent turbulent heat fluxes and conduction), the energy tranfer boundary condition of the top layer of the roof is replaced by a heat conduction flux (de Munck \etal 2013\nocite{demunck2013}):
+
+\begin{equation}
+G_{N-R} = \overline{\lambda_{N-R}} (T_{N_n}-T_{R_1})
+\end{equation}
+$T_{N_n}$ and $-T_{R_1}$ re, respectively, the temperatures of the deepest
+sub-layer of the natural roof and the top layer of the artificial
+roof. $\overline{\lambda_{N-R}}$ is the interfacial thermal conductivity between
+the two layers, approximated using the characteristics of the bottom layer of the greenroof.
+
+The equation evolution of the top layer roof temperature (presented previously in section \ref{T}) is then modified as :
+
+\begin{eqnarray}
+C_{R_1}\frac{\partial T_{R_1} }{\partial t} = & (1-f_{greenroof}) &\left[ (1-{\delta_{snow}}_R) \left( S_{R}^* + L_{R}^* - H_R -LE_R  - G_{R_{1,2}} \right) + {\delta_{snow}}_R\left( G_{R_{snow,1}} - G_{R_{1,2}} \right)\right] \frac{1}{d_{R_1}} \nonumber\\
+ & + f_{greenroof} & (G_{N-R}  - G_{R_{1,2}} )\frac{1}{d_{R_1}} \nonumber 
+\end{eqnarray}
+
+Due to the presence of waterproofing membranes, no hydrological coupling is required between the soil–vegetation
+model and the building model, and the excess water and the water that percolates leaves the system and are collated as the
+“green roof outlet drainage”. This will allow for connection to urban drainage systems when these are developed within a future version of TEB. \\
+
+The multi-soil-layer diffusion version of ISBA is used to simulate the greenroofs substrate.
+For standard applications of ISBA to natural soils, the thermal  characteristics  for  dry  soil  and  the  hydrological  characteristics are deduced from empirical formulations, called pedotransfer  functions,  which  connect  these  characteristics to the user-input soil texture properties (sand and clay fractions,  Decharme  et  al.,  2011\nocite{decharme2011}).  But  the  pedotransfer  functions  derived  for  natural  soils  are  not  really  adapted  to the  soil-forming  materials  constituting  the  substrate  or  the drainage layers of a greenroof. Consequently, whenever possible, it is better to directly define greenroof-specific thermal and hydrological characteristics. However,  when  thermal  characteristics  for  greenroof  materials are available, hydrological characteristics are not only hard to find but also consist in lab measurements which do not reflect in situ conditions such as soil compaction or root presence/growth. Indeed, root growth results in the formation of soil microstructures, which modifies the intrinsic soil hydrological behaviour. 
+De Munck \etal (2013)\nocite{demunck2013} proposes to use pedotransfer parameters based on organic matter. The best calibration  ensemble  obtained in this study for  the drainage  layer  –  whose  texture,  porosity  and  hydrological behaviour are complex – displays hydrological characteristics which are all typical of the behaviour of organic matter (peat): high porosity and saturated hydraulic conductivity. Such characteristics are therefore recommended for extensive greenroofs. Intensive greenroofs, that are composed of trees with a deeper soil structure (typically 1m), can be represented by the classical values of ISBA soils. \\
+
+
+\subsection{Irrigation and watering}
+
+Irrigation of gardens is somehow a common practice. Under most of climates during the hot season, it is also necessary to irrigate the vegetation on greenroofs in order to avoid the drying of the plants. Furthermore, road watering is also considered as a possibility to avoid extreme heat during heat waves. Such a practice is indeed several centuries old in Japan, known as Uchimizu. \\
+
+In TEB watering of gardens, greenroofs and roads is possible.  This allows to take into accounts some aspects linked to water management and adaptation of cities to climate. This is done with the following approach, for each three types of surfaces (separately). The user provides maps or data for:
+\begin{itemize}
+	\item the first and last month when watering occurs (both are included in the watering period). First month can be later in the calendar than the end day (for summer in the southern hemisphere for example).
+	\item the begining (included) and end (excluded) hour of the watering period each day. The begining hour can be later than the end one from a clock point of view (for nighttime watering for example).
+	\item the total amount of water per 24h per square meter that will be used during the watering.
+\end{itemize}
+
+The amount of water ($kg/m^2/24h$) will be equaly distributed during the defined period within the day, if the present month is a month of watering. Note that, for the same total amount of water during the day, this will induce larger instantaneaous flows if the period of watering is short and smaller flows if the period is long. For roads, the water is added to the road water reservoir $W_r$. For greenroofs and gardens, the water is directly added in the first layer of the soil in ISBA (not added to the rainfall). This simulated ground based irrigation systems, and avoid the interception of water by the trees and low plant leaves. \\
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\section{The Building Energy Module}
+
+The  energy  consumption  of  heating,  ventilation  and  air-conditioning  (HVAC)  systems  in  buildings  has  become  an important factor in the design and analysis of urban areas.  HVAC systems are responsible for waste heat emissions that can  contribute  (among  other  causes)  to  the  increase  in  air temperature observed in urban areas with respect to their undeveloped rural surroundings. This increase in air temperature in cities, a phenomenon known as the urban heat island (UHI) effect, can affect the energy consumption of HVAC systems and the waste heat emissions associated with them. The use of HVAC systems is expected to increase in the following years as a consequence  of  global-scale  and  urban-scale  climate  warming; therefore, urban climate models, such as the Town Energy Balance (TEB) scheme (Masson, 2000), has been improved in order to represent future scenarios of climate conditions and energy consumption in urban areas.\\
+
+Bueno \etal (2012)\nocite{bueno2012} and Pigeon \etal (2014)\nocite{Pigeon2014} implemented a Buidling Energy Module (BEM) in TEB. The reader is invited to refer to these articles for more details. \\
+
+\subsection{Buildings description}
+
+The BEM implemented in TEB considers a single thermal zone, a generic thermal mass to represent the thermal inertia of the indoor materials, the heat gains resulting from transmitted solar radiation and the internal sources of heat, infiltration and ventilation.  The heat conduction through the envelope of the building is calculated using a finite difference method individually for each surface (roof, wall and floor). An overview of all the processes simulated with the BEM implemented in TEB are displayed in figure \ref{BEM}. \\
+
+\begin{figure}[t]
+\hspace*{0.cm}
+\psfig{figure=\EPSDIR/teb-bem_diagram.eps,width=10cm}
+\caption{Diagram of a building and an urban canyon.  The main physical processes included in BEM-TEB are represented:  heat storage in building and urban construction materials, internal heat gains, solar heat fluxes, waste heat from HVAC systems, etc.  The diagram also represents the multi-layer version of the TEB scheme and the possibility of coupling it with an atmospheric mesoscale model.}
+\label{BEM}
+\end{figure}
+
+
+
+
+\subsection{Buildings energy budgets}
+
+BEM uses a heat balance method to calculate indoor thermal conditions and building energy demand.  An energy balance is  applied  to  each  indoor  surface  (si:  wall,  window,  floor, roof, and internal mass), accounting for conduction, convection, and radiation heat component. The  convection  and  radiation  terms  are  calculated  from  a standard heat transfer coefficient formulation, $Q=h\Delta T$. \\
+
+The longwave radiative exchanges between all the surfaces in the interior of the building are computed using the same type of approximation as for outdoor exchanges:
+
+\begin{equation}
+L_{S_1\; {\rm from} \; S_2} = 4 \sigma \epsilon^2 F_{S_1S_2}\left(\frac{1}{2}(T_{S_1}+T_{S_2})\right)^3 \left(T_{S_2}-T_{S_1}\right)
+\end{equation}
+
+where $F_{S_1S_2}$ is the configuration factor between surfaces 1 and 2, and where the emissivity $\epsilon$ of internal surfaces has been supposed to be equal for all surfaces (and set by default to 0.9). All the expressions of the configuration factors are given in Bueno \etal (2012)\nocite{bueno2012}. \\
+
+The convection terms between each internal surface $si$ and the indoor air are computed as:
+\begin{equation}
+Q_{cv} = h_{cv}(T_{si}-T_i)
+\end{equation}
+where $T_{si}$ and $T_i$ are the surface and indoor air temperatures respectively. The  convective   heat   transfer   coefficient   has   the   following   values: $h_{cv}= 3.076 Wm^{-2}K^{-1}$ for  a  vertical  surface (walls, internal mass); $h_{cv}= 0.948 Wm^{-2}K^{-1}$ for a horizontal surface with reduced convection (floor surface with $T_{si}=T_{floor_1}<T_i$ and ceiling surface with $T_{si}=T_{roof_k}>T_i$) ; and $h_{cv}= 4.040 Wm^{-2}K^{-1}$ for a horizontal surface with enhanced convection. \\
+
+
+The energy budget of internal air is also simulated (see below).\\
+
+
+\subsection{Inside solar irradiation, sheltering}
+
+
+Window effects have been introduced in the outdoor energy balance of the TEB model. The external surfaces of windows participate in the outdoor energy balance in the same manner as other urban surfaces (walls, road, garden, etc.).  Window surfaces are semi-transparent and therefore have three optical properties (albedo, absorptivity, and transmittance). Two coupled surface energy balances are solved to calculate the internal and external surface temperatures of windows. Each surface energy balance accounts for the convective and radiative heat fluxes reaching the surface and the steady-state heat conduction through the window.
+Building energy models usually consider the dependence of the solar heat transmitted through windows on the angle of incidence of the sun. However, simulations with EnergyPlus for different window orientations show that for an average-oriented canyon, the solar transmittance of windows ($\tau_{win}$) can be approximated by a uniform value of 0.75 times the solar heat gain coefficient (SHGC). The SHGC can be found in window catalogues and represents the fraction of incoming solar radiation that participates in the indoor energy balance. Using the solar energy reaching the window (cf section \ref{reflect}), the solar heat transmitted through windows is then calculated as:
+
+\begin{equation}
+S_{indoor} = \mathcal{A}_{win} \tau_{win} f_{win}
+\end{equation}
+
+The solar absorptivity of windows is calculated as a function of the U-factor and the SHGC (Pigeon \etal 2014)\nocite{Pigeon2014}, by using the equations proposed in EnergyPlus documentation (description in http://apps1.eere.energy.gov/buildings/energyplus/pdfs/engineeringreference.pdf). The U-factor can also be found in window catalogues and measures the window conductance, including the convective and longwave heat transfer coefficients at both sides of the window.
+The window albedo is calculated so that the three optical properties  (albedo,  absorptivity,  and  transmittance)  sum  to unity. As seen above, the model uses an area-averaged facade albedo to calculate solar reflections by weighting the albedo of walls and windows with the glazing ratio of buildings. \\
+
+It is also possible to simulate shelters on the window, and the periods during which shelters are on. BEM also includes a simplified model to account for window shadowing devices.  If the solar radiation reaching the window is above a predefined threshold, the model considers that shades are placed outside and in front of the windows. These shades are characterized by a predefined transmittance.  The model reduces the solar radiation reaching the windows by changing  its  optical  properties.   The  solar  radiation  that  is not reflected, absorbed, or transmitted by the windows is assumed to be converted into a sensible heat flux towards the urban canyon. \\
+
+
+\subsection{Domestic Heating and Air conditioning}
+
+To calculate the dynamic evolution of indoor air temperature between a cooling and a heating thermal set point, BEM solves a sensible heat balance at the indoor air.  The sensible heat balance is composed of the convective heat fluxes from indoor surfaces, the convective fraction of internal heat gains, the infiltration sensible heat flux, and the sensible heat
+flux supplied by the HVAC system. \\
+
+\begin{equation}
+	V_{bld}\rho C_p \frac{dT_i}{dt} 
+	= \sum_{si} A_{si}h_{cv,si}(T_{si}-T{i}) +Q_{ig}(1-f_{rd})(1-f_{lat}) + \dot{V}_{inf}\rho C_p (T_{can}-T_{i}) + \dot{m}_{sys}C_p (T_{sys}-T_{i}) \label{Ti}
+\end{equation}
+
+where $T_i$ is the indoor air temperature; $V_{bld}$ ,$\rho$ and $c_p$ 
+are the volume, density and specific heat of the indoor air, respectively;
+$A_{si}$ is the area of the indoor surface of each type (wall,  window,  floor, roof, and internal mass);
+$Q_{ig}$ represents the internal heat gains; $f_{lat}$ is the latent fraction of internal heat gains;
+$f_{rd}$ is the radiant fraction of sensible internal heat gains;
+$\dot{V}_{inf}$ is the infiltration air flowrate;
+$T_{can}$ is the outdoor air temperature; and
+$\dot{m}_{sys}$ and $T_{sys}$ are the mass flowrate and temperature of the air supplied by the HVAC system. \\
+
+
+\subsection{Waste heat emissions}
+
+The waste heat released into the environment by a cooling system is given by : 
+
+\begin{displaymath}
+	Q_{waste, cool} = Q_{exch, cool} + Q_{HVAC, cool}
+\end{displaymath}
+where $Q_{exch, cool}= \dot{m}_{sys}C_p (T_{sys}-T_{i})$ is the thermal energy exchanged between the cooling system and the indoor air, and $ Q_{HVAC, cool}$ is the energy consumption of the cooling system (e.g. electricity).  The user can specify the sensible-latent split of the waste heat produced by the cooling system, depending on whether the system is air-condensed, water-condensed, or both. The user can also define which fraction of this waste heat/humidity is released into the canyon (e.g. for individual air-conditionning systems located on each balcony) or above roofs (for centralized systems). \\
+
+For the heating system, the waste heat flux is related to the energy contained in the combustion gases and is given by:
+\begin{displaymath}
+Q_{waste, heat} = Q_{HVAC, heat} - Q_{exch, heat}
+\end{displaymath}
+
+where $Q_{HVAC, heat}$ is the energy consumption of the heating system (e.g. gas). \\
+
+
+\subsection{Ventilation and infiltration}
+
+The flow rate $\dot{V}_{inf}$ in equation \ref{Ti} describes the amount of air exchanged between indoor and outdoor. This exchange of air lead to modification of heat and moisture inside but also outside. For example, heated buildings will heat the outside air through conduction trhough the walls and roofs but also directly by air transfers. Those air transferts have three potential sources: inflitration, ventilation, natural ventilation. All these three processes can be simulated in TEB. Note that all are optional, but infiltration is per defaut activated, while the two others are not. \\
+
+\subsubsection{Infiltration}
+
+Infiltration refers to the flow of air induced voluntary, e.g. by slits in walls and windows, or involuntary, due to cracks and defaults of the structure of the building. The infiltration flow rate $\dot{V}_{inf}$ is typically of the order of 0.5 $vol/h$ (where $vol$ refers to the volume of air in the building). \\
+
+
+\subsubsection{Mechanical Ventilation}
+
+Mechanical ventilation is related to systems that force the exchange of air between indoor and outdoor. This allows for example to evacuate humidity from bathrooms or kitchens. This type of equipment is common in recent buildings and houses. The formulation is the same as for infiltration, but with an exchange rate that can be larger. Double-flow mechanical ventilation can also reduce the heat loss during the exchange of air between indoor and outdoor (this is parameterized using a smaller ventilation coefficient). \\
+
+\subsubsection{Natural Ventilation}
+
+People can open windows and doors. This leads to natural ventilation. This can be done for example for aeration, to go inside or outside, or for ventilation of the building, e.g. to reduce the indoor temperature if it is cooler outside. The latter process is parameterized in TEB. Contrary to inflitration and mechnaical ventilation, the flowrate in the case of natural ventilation is dependent of the external meteorological conditions. This flow will be larger if the wind is stronger, or if the temperature difference between indoor and outdoor air is larger. The formulations for the natural ventilation coefficient is given in Bueno \etal 2012\nocite{bueno2012}, as well as the hypotheses done on the behaviour of people on the condition of opening and closing of windows. \\
+
+
+
+\subsection{Solar panels}
+
+Solar panels can be simulated on the roofs (Masson \etal 2014\nocite{Masson2014}). An additional energy balance is then computed for the solar panel, taking into account solar radiation (from above and reflected upwards), longwave radiation (received both from above and below, and emitted/reflected both upwards and downwards), convection and energy production. No heat storage is taken into account, the solar panel being supposed thin enough. The presence of solar panels also impacts the underlying surfaces: {\bf structural roof and grennroof}. solar panels modifiy their energy balance, by sheltering the solar radiation (in an amount equal to their surface coverage $f_{panel}$), and modify the longwave balance. \\
+
+
+\begin{figure}[t]
+\hspace*{0.cm}
+\psfig{figure=\EPSDIR/fig_solar_panels.eps,width=10cm}
+\caption{Schematic diagram of the energy balance of the solar panel and its impact on radiation received by the roof (dashed arrows: solar fluxes; plain arrows: long-waves fluxes; dotted arrow: sensible heat}
+\label{solar}
+\end{figure}
+
+
+
+
+For downwards longwave emission, solar panel is supposed of emissivity 1 and at air temperature. For the upwards longwave emitted terms, the solar panel temperature takes into account air temperature and solar irradiance (that itself uses an empirical coefficient $FT=1.1$ to take simulates the geometrical effect of the tilting of the solar panel towards the sun). Default value for emissivity of solar panels is 0.9. \\
+
+\begin{equation}
+T_{panel} = T_{a} + k_T \times FT (SW_{\Downarrow} + SW_{\downarrow})
+\end{equation}
+
+Two types of solar panels can be simulated:
+\begin{itemize}
+\item thermal panels, for hot water production
+\item photovoltaic panels, for electricity production
+\end{itemize}
+
+Thermal panels are more efficient than photovoltaic panels (efficientcy coefficient of 0.6 instead of 0.14, per default). However, thermal panels are more complicated to install, and only a limited amount of solar panels is necessary for warming water, depending on the need in hot water. In TEB, thermal panels are supposed to be installed on residential buildings only (note that this requires to have an information on the fraction of residential buildings in the grid mesh). 
+It is then necessary to define what proportion of the roof area is required for thermal panels, and how much area remains available for PV panels. In residential buildings, one supposes that the density is typically 1 occupant per 30$m^2$ of floor area. Furthermore, 1$m^2$ of thermal panel is needed per capita. This means 1$m^2$ of panel per 30$m^2$ of floor area. For single story accommodation, 1$/30$ of the roof is then equipped with thermal panels, and ($f_{panel}−1/30)$ by PV panels.  If the building has two stories, thermal panels will occupy $2/30$ of the roof area, and so on.
+So if $N_{floor}$ is the number of floors of the building (variable calculated in TEB), the proportions of thermal panels ($ f_{ther\; panel}$) and and photovoltaic panels ($f_{phot\; panel}$) are calculated as :
+
+\begin{eqnarray}
+	f_{ther\; panel} = & {\rm min}(N_{floor}/30 ; f_{panel} ) \nonumber \\
+	f_{phot\; panel} = & f_{panel} -  f_{ther\; panel} \nonumber
+\end{eqnarray}
+
+All details on the production of energy by both types of panels is given in Masson \etal (2014)\nocite{Masson2014}. The energy produced by the solar panels, that influences its energy balance, is computed as:
+
+\begin{equation}
+ E_{prod}  = (f_{ther\, panel} E_{ther\, prod} + f_{phot\, panel} E_{phot\, prod} ) /  f_{panel} \hspace{2.cm}  (W/m^2 \, {\rm of\, solar\, panel}) \nonumber
+\end{equation}
+
+
+And finally, the sensible heat flux $H_{panel}$ that is not easy to parameterize, is found as the residual of the solar panel energy balance. \\
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\section{The Surface Boundary Layer module, when applied in TEB}\label{SBL_TEB}
+
+
+The TEB-SBL (for Surface Boundary Layer) version of TEB has been recently developed 
+in order to improve prediction of the meteorological fields inside the street canyon 
+(Hamdi \etal (2008), Masson \etal (2009))\nocite{Hamdi2008}\nocite{Masson2009}.
+%\citep{hamdi08,masson09} 
+It resolves the surface boundary layer inside and above urban canopy by introducing 
+a drag force approach - based on Yamada (1982) \nocite{yamada82}
+%\citet{yamada82} 
+for vegetation canopies - in order to take into account the influence of buildings 
+on the local atmospheric characteristics.
+\\
+
+\subsection{Drag by buildings}
+
+The equations for momentum, turbulent kinetic energy, air temperature, and specific 
+humidity follow the same general expression (here for momentum):
+{\footnotesize
+\begin{eqnarray}
+\frac{\partial U}{\partial t} = F_U + \left. \frac{\partial U}{\partial t} \right|_{TEB}
+\end{eqnarray}
+}
+According to Martilli (2002) \nocite{Martilli2002} 
+%\citet{martilli02}
+, the momentum equation includes, besides the general forcing term $F_U$, a contribution 
+from the area-average effect of the subgrid urban elements that is partitionned into a 
+contribution from vertical surfaces (buildings and walls) and a contribution from horizontal 
+surfaces (roofs and roads). For the present version of TEB-Veg that only takes into account 
+low vegetation, the garden contribution is included in the horizontal term:
+{\footnotesize
+\begin{eqnarray}
+\left. \frac{\partial U}{\partial t} \right|^H_{TEB} = - C_d U^2 \frac{S_H}{V_{air}}
+\end{eqnarray}
+}
+where $C_d$ is the drag coefficient, $S_H$ the horizontal surface area of roofs, roads, 
+and gardens, and $V_{air}$ the volume of air in the urban grid cell. The drag coefficient 
+is equal to (the $\pi$ term coming from averaging of the drag coefficient along all wind directions) :
+
+\begin{eqnarray}
+C_d =  0.4 / \pi
+\end{eqnarray}
+
+For temperature (T) and humidity (q), the contributions from gardens are taken into account 
+through the sensible and latent heat fluxes:
+{\footnotesize
+\begin{eqnarray}
+\left. \frac{\partial T}{\partial t} \right|_{TEB} & = & \left ( \frac{Q_{H_R}+Q_{H_r}+Q_{H_g}}{\rho C_p} \right ) \frac{S_H}{V_{air}} 
+                                                               + \frac{Q_{H_w}}{\rho C_p} \frac{S_V}{V_{air}} \\
+\left. \frac{\partial q}{\partial t} \right|_{TEB} & = & \left ( \frac{Q_{E_R}+Q_{E_r}+Q_{E_g}}{\rho} \right ) \frac{S_H}{V_{air}}
+\end{eqnarray}
+}
+with $Q_{H_R}$, $Q_{H_r}$, and $Q_{H_g}$ the sensible heat fluxes for roofs, roads, and 
+gardens (same for the latent heat flux), $Q_{H_w}$ the sensible heat fluxes for walls, 
+and $S_V$ the vertical surface area of walls. \\
+
+
+\subsection{Mixing length}
+
+Vertical turbulent exchanges within the canyon (and also above the canyon) are parameterized 
+with the turbulent scheme of Cuxart \etal (2000)\nocite{Cuxart2000}.
+%\citet{cuxart00} 
+This scheme uses an equation for the turbulent 
+kinetic energy, and is closed with a mixing length. Hamdi \etal (2008)\nocite{Hamdi2008}
+%\citet{hamdi08} 
+use a constant mixing length within the canyon, equal to the building height. Here, we 
+improve this representation following the works of Santiago and Martilli (2010)\nocite{Santiago2010}
+%\citet{santiago10}
+, that used fluid dynamics models to explicitly simulate the 
+motions within the canyon to derive a vertical profile of the mixing length.\\
+\\
+\\
+The mixing length ($L$) is parameterized as : 
+{\footnotesize
+\begin{eqnarray}
+\frac{L}{C} & = & {\rm min} \; [ \; 2.24 (h-d) \; , \; z \;]   \hspace*{1.2cm} {\rm for} \hspace*{1cm} \frac{z}{h} < 1.    \\
+\frac{L}{C} & = & {\rm max} \; [ \; 2.24 (h-d) \; , \; z-d \;] \hspace*{0.5cm} {\rm for} \hspace*{1cm} \frac{z}{h} > 1.5
+\end{eqnarray}
+}
+with a continuous linear transition between the top of the canopy layer and the base of 
+the inertial sublayer, and where the displacement height $d$ is also parameterized 
+following Santiago and Martilli (2010)\nocite{Santiago2010}:
+%\citet{santiago10}
+{\footnotesize
+\begin{equation}
+d = {\rm max} \left [ \; \frac{3}{4} \; h \; , \; \lambda_f^{0.13} \; h  \; \right ]
+\end{equation}
+}
+Here $z$ is the height above ground, $h$ is the building height, $\lambda_f$ is the frontal 
+area density, that is derived from other TEB geometric parameters assuming no prefered direction 
+of buildings with respect to the wind direction ($\lambda_f = [\frac{h}{w} f_{bld}] / \frac{\pi}{2}$, 
+with $w$ being the road width and $f_{bld}$ the building fraction). $C$ is dependant on the 
+turbulence scheme constants and of the atmospheric stability, using Monin-Obukhov stability functions 
+(Redelsperger (2001))\nocite{Redelsperger2001}.
+%\citep{redelsperger02}. 
+Note that near the surface, one limits the mixing length to reproduce the effect of the surface on 
+the turbulent eddies. \\
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\section{Miscellaneous indicators}
+\subsection{Thermal comfort}
+
+A lot of indices (more than 50!) exist to evaluate the thermal comfort of human beings. This is the science of bioclimatology. The COST action 730 recently proposed a new index: the Universal Thermal Climate Index (UTCI) (http://www.utci.org/). This is the index that is estimated in TEB to represent the thermal comfort of people. This index takes into account effects of wind, temperature, humidity and radiation. It makes implicit hypotheses on the activity and clothing of the person for which the UTCI is estimated. Therefore, this index should be understood as an index relative to a typical person, but the actual sensation of people may of course be different. The UTCI provide a temperature value, that can be compared to a temperature scale to infer the amount of comfort or cool or heat discomfort. \\
+
+In TEB, we calculate the UTCI for :
+\begin{itemize}
+\item outdoor condition, in sunlight
+\item outdoor condition, in shade
+\item indoor condition (pertinent only without AC system in summer)
+\end{itemize}
+
+\subsubsection{Mean radiant temperature}
+
+To calculate the UTCI, one must first estimate radiant temperature. This is done using the radiative terms computed by TEB.  For outdoor computations, one first estimate the view factors of ground, facades and sky for a human body (of mean height $h_{human}=1.7m$):
+
+\begin{eqnarray}
+	F_{human-fac} = & \left(\sqrt{h_{human}^2 + \frac{w^2}{4}}
+	+ \sqrt{h^2 + \frac{w^2}{4}} -w/2 
+	- \sqrt{(h-h_{human})^2 + \frac{w^2}{4}}\right) / (2h_{human}) \nonumber \\
+	F_{human-ground} = & \frac{1}{2}\left[ \frac{w}{2h_{human}} + 1 -\sqrt{\left(\frac{w}{2h_{human}}\right)^2+1} \right] \nonumber \\
+	F_{human-sky} = & 1 - F_{human-fac} - F_{human-ground} \nonumber 
+\end{eqnarray}
+	
+where $w$ is the canyon width, computed from input TEB parameters as:
+\begin{displaymath}
+w = 2h (1-f_{bld}) / R_{wall-hor}
+\end{displaymath}
+
+The radiation received by the human body, from solar diffuse and infra-red radiation (so for a person in shade), is estimated as:
+\begin{eqnarray}
+	RAD_{body,shade} = (1-\alpha_{body})/\epsilon_{body} &&\left[  F_{human-sky}S^\downarrow + F_{human-fac} S_{fac} + F_{human-fac} S_{ground} \right] \nonumber \\
+		    &	+ &\left[  F_{human-sky}L^\downarrow + F_{human-fac} L_{fac} + F_{human-fac} L_{ground} \right]
+\end{eqnarray}
+where $\alpha_{body}=0.3$ is the albedo of human body, $\epsilon_{body}=0.97$ the emissivity of human body, and $S_{fac}$, $S_{ground}$ the solar radiation reflected by facades and ground (garden and road together) respectively, and $L_{fac}$, $L_{ground}$ the longwave radiation emitted/reflected by facades and ground, respectively. \\
+
+For the evaluation of the UTCI in sunlight, the amount of solar radiation received by the human body is added. This is done taking into account the solar elevation angle (deduced from the zenithal angle as $\gamma = \frac{\pi}{2}-\lambda)$, because the human being is supposed standing in upright position.
+\begin{eqnarray}
+S^\Downarrow_{body} = S^\Downarrow \times 0.308 {\rm cos}\left[ \gamma (1-\gamma^2/14.744) \right] \nonumber \\
+RAD_{body,sun} = RAD_{body,shade} + S^\Downarrow_{body}(1-\alpha_{body})/\epsilon_{body} \nonumber
+\end{eqnarray}
+
+And finally the mean radiant temperature, either in shade or sun, is equal to :
+\begin{equation}
+	T_{mrt} = (RAD_{body,\star} / \sigma)^{\frac{1}{4}}
+\end{equation}
+
+
+\subsubsection{Universal Thermal Climate Index}
+
+Then, the UTCI indices are computed using an approximated form of a complete human body energy balance model. This approximated form is a polynomial formulae, taking into account air temperature at 2 meters ($^\circ$C), vapor pressure at 2 meters (hpa), wind at 10m ($ms^{-1}$), and mean radiant temperature ($^\circ$C). \\
+
+For indoor index computations, the radiative temperature is computed using the radiation emitted by each interior surface, the wind is supposed equal to 0.5$ms^{-1}$. \\
+
+For outdoor index computations, the mean radiant temperature is computed according to the above shade or sunlight formulae. If the SBL scheme is not used, the wind is taken at 10m above roofs level or at forcing level, and the temperature and humidity are equal to the canyon air temperature and humidity. If the SBL scheme is used, the wind is equal interpolated 10m above the ground (road and garden) from the SBL layers, and the temperature and humidity are equal to the air temperature and humidity 2m above ground level. \\
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\clearpage
+%\listoftables
+%\clearpage
+%\listoffigures
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\begin{table}
+
+{\footnotesize{
+\begin{tabular}{c l c}
+\hline
+symbol                             & designation of symbol & unit    \\
+\hline 
+geometric parameters && \\
+\hline
+$a_{town}$                & fractional area occupied by artificial material &  - \\
+$f_{bld}$                 & fractional artificial area occupied by buildings &  - \\
+$f_{garden}$              & fractional artificial area occupied by urban vegetation &  - \\
+$1 - f_{bld}$ - $f_{garden}$           & fractional artificial area occupied by roads     & - \\
+$f_{win}$                 & fractional area occupied by windows relative to the whole facade surface&  - \\
+$1- f_{win}$              & fractional area occupied by structural walls relative to the whole facade surface&  - \\
+$f_{greenroof}$                 & fractional area occupied by greenroofs relative to the roof surface&  - \\
+$h$                       & building height                       & m \\
+$h/w$                     & canyon aspect ratio             & - \\
+$z_{0_{town}}$            & dynamic roughness length for the
+building/canyon system                                          & m \\
+\hline
+radiative parameters && \\
+\hline
+$\alpha_R$, $\alpha_r$, $\alpha_w$                & roof, road and wall albedos & - \\
+$\epsilon_R$, $\epsilon_r$, $\epsilon_w$            &roof, road and wall emissivities                      & - \\
+$\alpha_{garden}$, $\alpha_{win}$               & garden and window albedos & - \\
+$\epsilon_{garden}$, $\epsilon_{win}$           & garden and window emissivities                      & - \\
+\hline
+thermal parameters && \\
+\hline
+$d_{R_k}$, $d_{r_k}$, $d_{w_k}$ & thickness of the $k^{th}$ roof, road or wall layer & m \\
+$\lambda_{R_k}$, $\lambda_{r_k}$, $\lambda_{w_k}$          & thermal conductivity of the $k^{th}$ roof, road or wall layer & W m$^{-1}$ K$^{-1}$\\
+$C_{R_k}$, $C_{r_k}$, $C_{w_k}$                 & heat capacity of the $k^{th}$ roof, road or wall layer & J m$^{-1}$ K$^{-1}$\\
+$U_{win}$ & U-factor of windows & - \\
+\hline
+\end{tabular}
+}}
+
+\caption{Parameters of the TEB scheme.  {\it{ Note that $a_{town}$ is not strictly
+a parameter of the TEB scheme, but is used to average the output TEB fluxes
+with those computed for the vegetation and water portions of the
+grid mesh.
+Note also that some surfaces
+between the buildings, such as gardens or parks for example, are {\bf not}
+treated by the TEB model, but modify the canyon width, $w$.}}
+}
+\label{symbol}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\begin{table}
+
+{\footnotesize{
+\begin{tabular}{c l c}
+\hline
+symbol                             & designation of symbol & unit    \\
+\hline 
+prognostic variables && \\
+\hline
+$T_{R_k}$, $T_{r_k}$, $T_{w_k}$  & temperature of the $k^{th}$ roof, road or wall layer & K \\
+$W_R$, $W_r$              & roof and road water interception reservoir& kg m$^{-2}$ \\
+$T_{win_k}$  & window temperatures & K \\
+$T_{mass_k}$, $T_{floor_k}$  & temperature of the $k^{th}$ internal mass or floor layer & K \\
+$T_{i_{bld}}$  & building interior air temperature & K \\
+${W_{snow}}_R$, ${W_{snow}}_r$ & roof and road snow interception reservoir& kg m$^{-2}$ \\
+${T_{snow}}_R$, ${T_{snow}}_r$ & roof and road snow temperature& K \\
+${\rho_{snow}}_R$, ${\rho_{snow}}_r$ & roof and road snow density& kg m$^{-3}$ \\
+${\alpha_{snow}}_R$, ${\alpha_{snow}}_r$ & roof and road snow albedo& -  \\
+\hline
+diagnostic variables && \\
+\hline
+$T_{can}$ & canyon air temperature & K \\
+$q_{can}$ & canyon air specific humidity & kg kg$^{-1}$ \\
+$U_{can}$ & along canyon horizontal wind & m s$^{-1}$ \\
+$\alpha_{town}$ & town effective albedo& - \\
+$T_{s_{town}}$ & town area averaged radiative surface temperature & K \\
+\hline 
+input energy fluxes && \\
+\hline
+$L^\downarrow$ & downward infra-red radiation on an horizontal surface  & W m$^{-2}$ \\
+$S^\downarrow$ & downward {\bf diffuse} solar radiation on an horizontal surface  & W m$^{-2}$ \\
+$S^\Downarrow$ & downward {\bf direct} solar radiation on an horizontal surface  & W m$^{-2}$ \\
+!-------------------------------------------------------------------------------
+$H_{traffic} $ & anthropogenic sensible heat flux released in the canyon & W m$^{-2}$ \\
+$LE_{traffic} $ & anthropogenic latent heat flux released in the canyon & W m$^{-2}$ \\
+$H_{industry} $ & anthropogenic  sensible heat flux released by industries & W m$^{-2}$ \\
+$LE_{industry} $&  anthropogenic latent heat flux released by industries & W m$^{-2}$ \\
+\hline
+other energy input && \\
+\hline
+$T_{heat\; target_{bld}}$  & domestic heating target for interior air temperature & K \\
+$T_{cool\; target_{bld}}$  & air-conditioning target for interior air temperature & K \\
+\hline
+output energy fluxes && \\
+\hline
+$S^*_R$, $S^*_r$, $S^*_w$ & net solar radiation budget for roofs, roads and walls & W m$^{-2}$ \\
+$L^*_R$, $L^*_r$, $L^*_w$ & net infra-red radiation budget for roofs, roads and walls & W m$^{-2}$ \\
+$H_R$, $H_r$, $H_w$ & turbulent sensible heat flux for roofs, roads and walls & W m$^{-2}$ \\
+$LE_R$, $LE_r$, $LE_w$ & turbulent latent heat flux for roofs, roads and walls & W m$^{-2}$ \\
+$G_{R_{k,k+1}}$, $G_{r_{k,k+1}}$, $G_{w_{k,k+1}}$ & conduction heat flux between $k^{th}$ and $k+1^{th}$ roof, road or wall layers & W m$^{-2}$ \\
+$H_{town}$ & town averaged turbulent sensible heat flux & W m$^{-2}$ \\
+$LE_{town}$ & town averaged turbulent latent heat flux & W m$^{-2}$ \\
+\hline 
+\end{tabular}
+}}
+
+\caption{Energy fluxes and variables in the TEB scheme}
+\label{symbol2}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+%====================
+\bibliography{surfex_scidoc}
+%====================
