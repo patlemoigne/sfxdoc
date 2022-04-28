@@ -1,0 +1,167 @@
+\documentclass[11pt]{book}
+\usepackage{sfx_package}
+\usepackage{lscape}
+\usepackage{textcomp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{fancyhdr}
+\usepackage{colordvi}
+\usepackage{graphicx}
+\usepackage{supertabular}
+%
+%\usepackage{amsmath,amssymb,float}
+%AAB to be able to use certain amsmath features
+\usepackage{amsmath}
+%AAB to be able to use \mathsrc font:
+\usepackage{mathrsfs}
+%
+\usepackage{afterpage}
+\usepackage{float}
+\usepackage{subfigure}
+\usepackage{color}
+%====================
+\bibliographystyle{plain}
+\usepackage[sectionbib]{chapterbib}
+%====================
+%numerotation des ligne pour relecture
+%\usepackage[left,modulo]{lineno}
+%\linenumbers
+%\usepackage{url}
+%\usepackage{apalike}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\newcommand{\etal}{{et al.\ }}
+\newcommand{\eg}{{e.g.\ }}
+\newcommand{\ie}{{i.e.\ }}
+\newcommand{\para}{ }
+\newcommand{\pa}{\\}
+\newcommand{\tabline}{\hline}
+%\newcommand{\cta}[2]{{\it{#1}}~(#2)}
+\newcommand{\cta}[2]{#1~(#2)}
+\newcommand{\ctb}[2]{({\it{#1}}~(#2))}
+\newcommand{\ctc}[4]{({\it{#1}}~(#2),~{\it{#3}}~(#4))}
+\newcommand{\ctd}[6]{({\it{#1}}~(#2),~{\it{#3}}~(#4),~{\it{#5}}~(#6))}
+\newcommand{\cte}[8]{({\it{#1}}~(#2),~{\it{#3}}~(#4),~{\it{#5}}~(#6),~{\it{#7}}~(#8))}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\baselinestretch}{1.1}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\title{SURFEX SCIENTIFIC\\ DOCUMENTATION}
+\author{P. Le Moigne}
+%\date{March 17, 2009}
+\maketitle
+%\dominitoc
+
+%---------------------------------
+{\large{~ \\ \\ \\ 
+EDITOR :  Patrick Le Moigne \\ \\
+
+Contributing authors :  \\ \\
+
+%v8.1
+2018\\
+C.~Albergel       $^{(1)}$, 
+A.~Boone          $^{(1)}$, 
+S.~Belamari       $^{(1)}$, 
+%expected contribution D.~Carrer         $^{(1)}$, 
+B.~Decharme       $^{(1)}$,  
+%expected contribution C.~Delire         $^{(1)}$, 
+M.~Dumont         $^{(4)}$, \\ 
+%expected contribution C.~Lebeaupin      $^{(2)}$,  
+P.~Le~Moigne      $^{(1)}$, 
+V.~Masson         $^{(1)}$  \\ \\ \\
+%expected contribution D.~Salas~y~Melia  $^{(1)}$  \\ \\ \\ 
+
+%v7.2
+2012\\
+A.~Boone          $^{(1)}$, 
+S.~Belamari       $^{(1)}$, 
+E.~Brun           $^{(1)}$, 
+J.-C.~Calvet      $^{(1)}$, 
+B.~Decharme       $^{(1)}$,  
+H.~Giordani       $^{(1)}$,  \\
+S.~Lafont         $^{(1)}$,  
+P.~Le~Moigne      $^{(1)}$, 
+S.~Morin          $^{(4)}$, 
+V.~Vionnet        $^{(1)}$  \\ \\ \\
+
+% v5 :
+2009\\
+A.~Boone          $^{(1)}$, 
+J.-C.~Calvet      $^{(1)}$, 
+B.~Decharme       $^{(1)}$, 
+S.~Faroux         $^{(1)}$, 
+A.-L.~Gibelin     $^{(1)}$, 
+C.~Lebeaupin      $^{(2)}$,  \\
+P.~Le~Moigne      $^{(1)}$, 
+J.-F.~Mahfouf     $^{(1)}$, 
+E.~Martin         $^{(1)}$, 
+V.~Masson         $^{(1)}$, 
+D.~Mironov        $^{(3)}$, 
+J.~Noilhan        $^{(1)}$, \\
+P.~Tulet          $^{(1)}$,
+B.~Van~Den~Hurk   $^{(4)}$  \\ \\ \\ 
+
+
+$^{(1)}$ : CNRM-UMR3589, M\'et\'eo-France/CNRS, Toulouse, France \\ 
+$^{(2)}$ : Laboratoire de M\'et\'eorologique Dynamique, Ecole Polytechnique, Palaiseau, France \\ 
+$^{(3)}$ : German Weather Service, Offenbach am Main, Germany  \\ 
+$^{(4)}$ : CNRM-UMR3589, M\'et\'eo-France/CNRS, Grenoble, France \\ 
+$^{(5)}$ : KNMI, The Netherlands
+
+~\\ \\ \\ \\ \\ \\ 
+
+{\it{Dissemination Level :}} public
+
+
+}}
+
+%---------------------------------
+%---------------------------------
+%  DESCRIPTION DES CHANGEMENTS
+%---------------------------------
+%---------------------------------
+\newpage
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+ISSUE No       &   &      DATE           &      PAGES      &         DESCRIPTION OF CHANGE                        \\
+\hline
+   1           & V5.0  &      May 2009       &      1 - 211    &         Original                                 \\
+\hline
+   2           & V7.2  &      March 2012     &      1 - 235    &         Description of Crocus, Isba-CC, Teb-Veg  \\
+               &       &                     &                 &         Bibliography references by chapter       \\
+               &       &                     &                 &                                                  \\
+\hline
+   3           & V8.0  &      February 2018  &      1 - 304    &         Description of MEB, TARTES,              \\
+               & and   &                     &                 &         Revision of ISBA-ES, ISBA-DF             \\
+               & V8.1  &                     &                 &         Revision of TEB+VEG                      \\
+               &       &                     &                 &         Revision of water surfaces               \\
+\hline
+\end{tabular}
+\newpage
+%---------------------------------
+%---------------------------------
+%---------------------------------
+%---------------------------------
+\dominitoc
+\tableofcontents
+
+\part{SURFACE PROCESSES SCHEME}
+\include{chapitre_0_introduction}
+\include{chapitre_1_surface_eau}
+\include{chapitre_2_surface_urbaine}
+\include{chapitre_3_surface_nature}
+\include{chapitre_4_modele_cls}
+\include{chapitre_5_chimie_aerosol}
+
+\part{LAND COVER: ECOCLIMAP}
+\include{chapitre_7_ecoclimap}
+
+\part{LAND SURFACE ANALYSIS}
+\include{chapitre_8_surface_analysis}
+
+%======================
+%\bibliography{surfex_scidoc}
+%======================
+
+\end{document}
