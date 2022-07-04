@@ -1,3 +1,5 @@
+# output in temporary directory
+export tempo="$HOME/tmp"
 # compilation of the scientific documentation
 pdflatex surfex_scidoc
 bibtex chapitre_0_introduction
@@ -17,8 +19,16 @@ pdflatex surfex_tecdoc
 pdflatex surfex_tecdoc
 
 # check undefined references and possible warnings
-grep -i undefined surfex_scidoc.log  > scidoc_undefined.txt 2>&1
-grep -i warning surfex_scidoc.log  > scidoc_warning.txt 2>&1
+grep -i undefined surfex_scidoc.log  > $tempo/scidoc_undefined.txt 2>&1
+grep -i warning   surfex_scidoc.log  > $tempo/scidoc_warning.txt   2>&1
+
+grep -i undefined surfex_tecdoc.log  > $tempo/tecdoc_undefined.txt 2>&1
+grep -i warning   surfex_tecdoc.log  > $tempo/tecdoc_warning.txt   2>&1
+
+echo " "
+echo "check undefined and warning in $tempo"
+ls -lrt $tempo/*.txt
+echo " "
 
 # clean up directory
 \rm -f *.log *.aux *.toc *.dvi *.blg *.bbl *.mt* *.maf *.out
