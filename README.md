@@ -1,4 +1,4 @@
-# scidoc
+# sfxdoc
 SURFEX documentation
 
 The sfxdoc project aims at gathering the SURFEX sofware scientific documentation and provide the users a technical document.\
