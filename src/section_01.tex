@@ -1,0 +1,135 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CONTRIBUTION TO THE SURFEX BOOK1: "Surface Processes Scheme"
+% Author        : P. Le Moigne
+% Original      : January 05, 2009
+% Last Update   : January 05, 2009
+% Last Update   : May     06, 2009
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{How to install the software}
+\begin{NoHyper}
+Reference to subsection \ref{sct_EQUA} of the scientific documentation.
+\end{NoHyper}
+
+\newpage
+\subsection{Basic packages to install on a linux PC}
+To run SURFEX, several packages need to be installed on a Linux PC: 
+
+\begin{itemize}
+	\item shell KSH
+	\item a fortran compiler (if none is ever installed, choose gfortran+gcc)
+	\item C++
+\end{itemize}
+
+Before to install SURFEX, please verify these packages are present on your computer.
+
+Optional:
+
+\begin{itemize}
+	\item MPI library (OPENMPI or MPICH2)
+\end{itemize}
+
+If MPI is not installed, SURFEX needs to be compiled with VER\_MPI=NOMPI. \\ In that case, type {\it{export VER\_MPI="NOMPI"}} before running the configure file.
+
+\newpage
+\subsection{Export off-line version of SURFEX}
+
+First important recommandation : before to run an experiment (pgd, prep or offline), you need to type: \\ \textcolor{red}{export OMP\_NUM\_THREADS=1} in the terminal where you will run the experiment. It’s even better to put this line in your file \$HOME/.bash\_profile so that it’s executed each time you open a new terminal.
+
+
+Instructions to install surfex on a linux-PC and to run a 1d example.
+
+\begin{enumerate}
+	\item {\bf{select a directory}} where installation has to be done: for example \$HOME or \$HOME/MYDIR, where MYDIR is an existing directory (if not, it has to be created by the user). From now on, it is supposed that the user has defined a MYDIR directory.
+
+		{\bf{Caution: the directory and all parent directories MUST NOT contain dots (.) in their names.}}
+	\item {\bf{download the package}} and move it into \$HOME/MYDIR/open\_surfex\_v8\_1.tar.gz (You can also get the package from GIT directly).
+
+	\item {\bf{extract files from archive}}: tar zxvf open\_surfex\_v8\_1.tar.gz (or gunzip open\_surfex\_v8\_1.tar.gz and then tar xvf open\_surfex\_v8\_1.tar.gz). A directory open\_SURFEX\_V8\_1/ is created in MYDIR and contains all software peaces.
+
+	\item {\bf{initialize environment variables needed for surfex}}:
+		go into src directory and run {\bf{./configure}}.
+Then, execute the profile file for this master version of surfex: \\
+		{\bf{. ../conf/profile\_surfex-LXgfortran-SFX-V8-1-1-MPIAUTO-DEBUG}}
+
+	\item {\bf{compile the master version of the code}}:
+		in the src directory, run {\bf{make}}, and then {\bf{make installmaster}}.
+		Master executables are created in directory {\bf{exe}}.
+If everything goes well until this step, then master surfex has been successfully installed on
+you computer.
+
+	\item {\bf{how to install a predefined experiment}}:
+		\begin{enumerate}
+			\item in another terminal, in src directory, do {\bf{export VER\_USER=FORC}}.
+			\item run {\bf{./configure}}.
+			\item execute the profile file corresponding to this user version of surfex: \\
+				{\bf{. ../conf/profile\_surfex-LXgfortran-SFX-V8-1-1-FORC-MPIAUTO-DEBUG}}.
+			\item run {\bf{make user}} and {\bf{make installuser}} to create the specific executables in directory
+exe.
+			\item go into {\bf{MY\_RUN/FORCING}} directory and run {\bf{prepare\_forcing.bash}} with a name
+				of experiment as argument: for example "{\bf{./prepare\_forcing.bash hapex}}"
+a namelist MY\_PARAM.nam will open (vi editor), simply quit (use command :q)
+Some information will then be written on the screen and should look like:
+				\begin{verbatim}
+$SRC_SURFEX="/home/lemoigne/surfex/open_SURFEX_V8_1"
+-- namelist NAM_MY_PARAM read
+> ==========================================
+> PREP_INPUT_EXPERIMENT: YEXPER = HAPEX
+> PREP_INPUT_EXPERIMENT: INI = 1
+> PREP_INPUT_EXPERIMENT: INPTS = 17521
+> PREP_INPUT_EXPERIMENT: JNPTS = 17521
+> PREP_INPUT_EXPERIMENT: ZTSTEPFRC = 1800.
+> PREP_INPUT_EXPERIMENT: YFORCING_FILETYPE = NETCDF
+> ===========================================
+YFILE_FORCIN=../DATA/hapex/HAPEX.DAT.30
+-rw-r--r-- 1 lemoigne mc2 1543644 jui 22 16:51
+/home/lemoigne/surfex/open_SURFEX_V8_1/MY_RUN/FORCING/FORCING.nc
+==============================================
+> input files moved to
+/home/lemoigne/surfex/open_SURFEX_V8_1/MY_RUN/KTEST/hapex
+==============================================
+				\end{verbatim}
+
+			\item {\bf{once the installation is done, go to \$SRC\_SURFEX/MY\_RUN/KTEST/hapex directory and launch successively}}:
+				\begin{enumerate}
+					\item pgd.exe
+					\item prep.exe
+					\item offline.exe
+				\end{enumerate}
+			\item {\bf{to view 1d-output}}, you can use your favorite graphic software (e.g. xmgrace, which is very easy to use for ASCII outputs, python, etc.)
+			\item {\bf{how to rerun a predefined experiment with new inputs}}:
+				\begin{enumerate}
+					\item you can define new surface characteristics by modifying file \\
+						\$SRC\_SURFEX/MY\_RUN/KTEST/hapex/OPTIONS.nam and then run pgd.exe, prep.exe and offline.exe
+					\item you can define new initial values for state variables by modifying file \\
+						\$SRC\_SURFEX/MY\_RUN/KTEST/hapex/OPTIONS.nam and then run prep.exe and offline.exe
+					\item you can modify the forcing characteristics
+						\begin{enumerate}
+							\item you can rerun \$SRC\_SURFEX/MY\_RUN/FORCING/prepapre\_forcing.bash and modify namelist MY\_PARAM to select the number of time steps you want to treat (parameter NUMBER\_OF\_TIME\_STEPS\_FINAL) the format of the input forcing files (parameter YFORCING\_FILETYPE)
+							\item then go to \$SRC\_SURFEX/MY\_RUN/KTEST/hapex and rerun pgd.exe, prep.exe and offline.exe
+						\end{enumerate}
+				\end{enumerate}
+			\item {\bf{how to create a new experiment}}:
+				\begin{enumerate}
+					\item you need to modify \$SRC\_SURFEX/src/FORC/my\_forcing.f90 to introduce the call to the new program that is going to read your dataset 
+					\item you need to create a new subroutine named \$SRC\_SURFEX/src/FORC/my\_forc\_xxxx.f90 that corresponds to experiment xxxx
+					\item then run successively:
+						\begin{enumerate}
+							\item in src directory, make user (verify that \$VER\_USER=FORC and that corresponding profile file has been executed).
+							\item in MY\_RUN/FORCING directory, prepare\_forcing.bash (to create input files related to your experiment)
+							\item then go to \$SRC\_SURFEX/MY\_RUN/KTEST/xxxx and run pgd.exe, prep.exe and offline.exe
+						\end{enumerate}
+				\end{enumerate}
+			\item {\bf{how to compile your own source code}}:
+				\begin{enumerate}
+					\item choose a name for your own source directory in src, for example MYSRC. Copy the sources (from OFFLIN or SURFEX directories) that you want to modify onto \$SRC\_SURFEX/src/MYSRC
+					\item go to \$SRC\_SURFEX/src/MYSRC and make your modifications
+					\item go to \$SRC\_SURFEX/src and launch successively \\
+						export VER\_USER=MYSRC \\
+./configure \\.
+../conf/profile\_surfex-LXgfortran-SFX-V8-1-1-MYSRC-MPIAUTO-DEBUG \\
+make user and make installuser. \\
+New executable files for MYSRC will be created in exe directory.
+				\end{enumerate}
+		\end{enumerate}
+\end{enumerate}

@@ -1,0 +1,103 @@
+\documentclass[a4paper,12pt,fleqn]{article}
+%\usepackage{graphicx}
+\usepackage{graphbox}
+%\usepackage{graphicx}
+%\usepackage{pdfpages}
+%\usepackage[utf8x]{inputenc}
+
+%\usepackage[utf8]{inputenc}
+%\usepackage[T1]{fontenc}
+\usepackage{setspace}
+\usepackage[hidelinks]{hyperref}
+%\usepackage[french]{varioref}
+%\newcommand\red[1]{{\textcolor{red}#1}}
+
+%\usepackage{natbib}
+
+%\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+
+%\usepackage{multibib}
+%\newcites{my}{Liste publications revue rang A}
+
+%\newcites{mycl}{Liste publications \`{a} comit\'{e} de lecture}
+
+%\newcites{myautres}{Autres publications}
+
+
+\usepackage{mdframed}
+\newcommand\tred[1]{{\color{red}#1}}
+\newcommand\tblue[1]{{\color{blue}#1}}
+
+\usepackage{array,multirow,makecell}
+\usepackage{amsmath,amsfonts,amssymb}
+\setcellgapes{1pt}
+\makegapedcells
+\usepackage[table]{xcolor}
+ \usepackage{textcomp}
+
+\usepackage{mathtools}
+%\usepackage{mathabx}
+\usepackage{multirow}
+\usepackage{multicol}
+
+\usepackage{xr}
+\externaldocument{surfex_scidoc}
+
+\newcommand{\pl}{\partial}
+\newcommand{\ol}{\overline}
+\newcommand{\trho}{\tilde{\rho}}
+\newcommand{\dif}{\,\mathrm{d}}
+\newcommand{\bvec}[1]{\mbox{\boldmath$#1$}}
+
+
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash }b{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash }b{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash }b{#1}}
+
+
+%\input{def_communes}
+
+%Habilitation à diriger des recherches 
+
+% Title Page
+\title{\textbf{SURFEX User Guide}}
+
+\author{V8.1}
+
+
+
+
+\begin{document}
+
+\maketitle
+
+%\begin{abstract}
+%\end{abstract}
+
+
+
+%fort impact sociétal dégâts matériel, perte humaine
+
+\tableofcontents
+
+
+\input{section_01}
+\input{section_02}
+\input{section_03}
+\input{section_04}
+
+
+
+%\bibliographystyle{copernicus}
+%\bibliographystyle{plain}
+%\bibliography{mesonhart}
+
+%\input{parties/valorisation}
+
+
+%\bibliographystylemyautres{./ametsoc}
+%\bibliographymyautres{mesonhart}
+
+
+
+\end{document}          

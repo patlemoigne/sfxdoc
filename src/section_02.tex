@@ -1,0 +1,293 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CONTRIBUTION TO THE SURFEX BOOK1: "Surface Processes Scheme"
+% Author        : P. Le Moigne
+% Original      : January 05, 2009
+% Last Update   : January 05, 2009
+% Last Update   : May     06, 2009
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{Overview of the externalized surface sequence}
+The externalized surface facilities do not contain only the program to run the physical surface
+schemes, but also those producing the initial surface fields (before the run) and the diagnostics
+(during or after the run). All these facilities are listed, below, and they separate in 4 main parts:
+\begin{enumerate}
+	\item PGD (routine pgd\_surf\_atm.f90): this program computes the physiographic data file (called
+PGD file below). At this step, you perform 3 main tasks:
+		\begin{enumerate}
+			\item You choose the surface schemes you will use.
+			\item You choose and define the grid for the surface
+			\item The physiographic fields are defined on this grid.
+		\end{enumerate}
+Therefore, the PGD file contains the spatial characteristics of the surface and all the
+physiographic data necessary to run the interactive surface schemes for vegetation and
+town.
+	\item PREP (routine prep\_surf\_atm\_n.f90): this program performs the initialization of the surface
+scheme prognostic variables, as temperatures profiles, water and ice soil contents,
+interception reservoirs, snow reservoirs.
+	\item run of the schemes (routine coupling\_surf\_atm\_n.f90): this performs the physical evolution
+of the surface schemes. It is necessary that this part, contrary to the 2 previous ones, is to be
+coupled within an atmospheric forcing (provided either in off-line mode or via a coupling
+with an atmospheric model).
+	\item DIAG (routine diag\_surf\_atm\_n.f90): this computes diagnostics linked to the surface (e.g.
+surface energy balance terms, variables at 2m of height, etc...). It can be used either during
+the run (adding these diagnostics in the output file(s) of the run), or independantly from the
+run, for a given surface state (still, an instantaneous atmospheric forcing is necessary for this
+evaluation).
+\end{enumerate}
+In addition, in order to read or write the prognostic variables or the diagnostics variables,
+respectively, in the surface files, the following subroutines are used: init\_surf\_atm\_n.f90,
+write\_surf\_atm\_n.f90 and write\_diag\_surf\_atm\_n.f90.
+
+%\newpage
+\subsection{Using SURFEX in offline mode}
+
+%\newpage
+\subsubsection{Namelist NAM\_IO\_OFFLINE}
+This namelist is the main namelist used in the off-line mode. It gives the name, type, values, default value as they exist in the SURFEX code. The last column of the table gives the cross-reference with the scientific documentation (when relevant).
+
+\scalebox{0.7}{
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Name                     &   Type           &      Values                       &    Default  &  X-Reference    \\
+\hline
+CSURF\_FILETYPE          & string (6 chrs)  &     "FA", "ASCII", "LFI","NC"     &   "ASCII"   &                 \\
+\hline
+CTIMESERIES\_FILETYPE    & string (6 chrs)  &     "NETCDF", "OFFLIN", "NONE",   &   "NONE"    &                 \\
+                         &                  &     "ASCII", "TEXTE", "BINARY",   &             &                 \\
+                         &                  &     "FA", "LFI", "NC", "XIOS"     &             &                 \\
+\hline
+CFORCING\_FILETYPE       & string (6 chrs)  &     "NETCDF", "BINARY", "ASCII"   &   "NETCDF"  &                 \\
+\hline
+CPGDFILE                 & string (28 chrs) &                                   &   "PGD"     &                 \\
+\hline
+CPREPFILE                & string (28 chrs) &                                   &   "PREP"    &                 \\
+\hline
+CSURFFILE                & string (28 chrs) &                                   &   "SURFOUT" &                 \\
+\hline
+YALG\_MPI                & string (4 chrs)  &    "LIN ","ADJ ","TILL","TILA"    &   "LIN"     &                 \\
+\hline
+LPRINT                   & logical          &                                   &   F         &                 \\
+\hline
+LRESTART                 & logical          &                                   &   F         &                 \\
+\hline
+LRESTART\_2M             & logical          &                                   &   F         &                 \\
+\hline
+LINQUIRE                 & logical          &                                   &   F         &                 \\
+\hline
+LDIAG\_FA\_NOCOMPACT     & logical          &                                   &   F         &                 \\
+\hline
+LSET\_FORC\_ZS           & logical          &                                   &   F         &                 \\
+\hline
+LWRITE\_COORD            & logical          &                                   &   F         &                 \\
+\hline
+LOUT\_FILENAME           & logical          &                                   &   F         &                 \\
+\hline
+LLIMIT\_QAIR             & logical          &                                   &   F         &                 \\
+\hline
+LADAPT\_SW               & logical          &                                   &   F         &                 \\
+\hline
+LSHADOWS\_SLOPE          & logical          &                                   &   F         &                 \\
+\hline
+LSHADOWS\_OTHER          & logical          &                                   &   F         &                 \\
+\hline
+LLAND\_USE               & logical          &                                   &   F         &                 \\
+\hline
+LALLOW\_ADD\_DIM         & logical          &                                   &   F         &                 \\
+\hline
+LDELAYEDSTART\_NC        & logical          &                                   &   F         &                 \\
+\hline
+LINTERP\_SW              & logical          &                                   &   F         &                 \\
+\hline
+NHALO                    & integer          &                                   &   0         &                 \\
+\hline
+NSCAL                    & integer          &   $\leq 59$                       &   0         &                 \\
+\hline
+NB\_READ\_FORC           & integer          &                                   &   0         &                 \\
+\hline
+NPROMA                   & integer          &                                   &   /         &                 \\
+\hline
+NI                       & integer          &                                   &   /         &                 \\
+\hline
+NJ                       & integer          &                                   &   /         &                 \\
+\hline
+NDATESTOP                & integer(4)       &                                   &   0000      &                 \\
+\hline
+XTSTEP\_SURF             & real             &                                   &   300.      &                 \\
+\hline
+XTSTEP\_OUTPUT           & real             &                                   &   1800.     &                 \\
+\hline
+XDELTA\_OROG             & real             &                                   &   200.      &                 \\
+\hline
+XIO\_FRAC                & real             &                                   &   1.        &                 \\
+\hline
+\end{tabular}
+}
+
+\begin{itemize}
+	\item CSURF\_FILETYPE: type of Surfex surface files created during PGD or PREP steps. %Filetypes in bold italic and / or red are not available in the open-source version of SURFEX.
+	\item CTIMESERIES\_FILETYPE: type of the files containing the output diagnostic time series. %Filetypes in bold italic and / or red are not available in the open-source version of SURFEX.
+	\item CFORCING\_FILETYPE: type of atmospheric forcing files.
+	\item CPGDFILE: name of the PGD file.
+	\item CPREPFILE: name of the PREP file.
+	\item CSURFFILE: name of the final output surfex file (restart file).
+	\item YALG\_MPI : type of algorithm used to distribute points in case of MPI parallelization:
+		\begin{enumerate}
+			\item LIN : linear distribution
+			\item ADJ : distribution grouping geographically adjacent points
+			\item TILL : distribution to balance points from same tiles and types of vegetation between processors.
+			\item TILA : distribution that combines ADJ and TILL.
+		\end{enumerate}
+	\item LPRINT: write information on screen during run.
+	\item LRESTART: write restart file.
+	\item LRESTART\_2M : if .TRUE., N2M=1 in NAM\_DIAG\_SURFn and LPGD=.TRUE. in NAM\_ISBA for the writing of the restart file.
+	\item LINQUIRE: enable test of inquiry mode.
+	\item LDIAG\_FA\_NOCOMPACT : fa compaction for diagnostic files.
+	\item LSET\_FORC\_ZS: if T, the orography of the forcing file is set to the same value as in surface file.
+	\item LWRITE\_COORD: enables write of fields XLAT and XLON in output file .
+	\item LOUT\_TIMENAME: change name of output file at the end of the day .
+	\item LLIMIT\_QAIR: General flag for coherence between forcing Qair and calculated Qsat(Tair).
+	\item LADAPT\_SW: to activate the simple coherence between solar zenithal angle and radiation coded for TEB. The default is FALSE because this coherence should be computed more realistically.
+	\item LSHADOWS\_SLOPE: flag to account for shadows of the slope itself. Works only on a rectangular domain, with XIO\_FRAC=1., YALG\_MPI=’LIN’, and LEXPLICIT\_SLOPE=T in NAM\_ZS.
+	\item LSHADOWS\_OTHER: flag to account for shadows of the surrounding mountains. Works only on a rectangular domain, with XIO\_FRAC=1., YALG\_MPI=’LIN’, and LEXPLICIT\_SLOPE=T in NAM\_ZS.
+	\item LLAND\_USE: if LLAND\_USE = .TRUE., fractions of vegtypes can be given at INIT level, by the namelist NAM\_LAND\_USE, and other surface parameters are calculated through ECOCLIMAP. It allows to make a restart with new fractions of vegtypes. But for the moment, the water balance is not kept in this case (it will be done in next version).
+	\item LALLOW\_ADD\_DIM : to be used only with XIOS. Allows to write TG, WG, WGI, SWD\_ISBA/TEB/SEAFLUX/WATFLUX/FLAKE/SURF\_ATM, \\ SWU\_ISBA/TEB/SEAFLUX/WATFLUX/FLAKE/SURF\_ATM in 2D (number of points / number of ground layers for TG, WG, WGI; number of points / number of spectral bands for SWD and SWU).
+	\item LDELAYEDSTART\_NC : to begin the simulation from the PREP date, picking the corresponding forcing time step in the NETCDF forcing file.
+	\item LINTERP\_SW : to interpolate the Short-Wave radiation with the new method. Default is false.
+	\item NHALO: size of the halo for interpolations in PGD step (INTERPOL\_FIELD). NHALO = 0 means that the whole domain is considered.
+	\item NSCAL : to run a test case for the chemical part. NSCAL can take values until 59.
+	\item NB\_READ\_FORC: subdivisions of the reading of forcings. Can vary from 1 (all forcing data read in one time) to the total number of forcing time steps (what was done until now). It's usefull especially for netcdf forcing files on HPC.
+	\item NPROMA, NI, NJ : parameters needed for OPEN-MP offline driver from GMAP, but not used in classical offline mode (size of openMP packets, domain sizes).
+	\item NDATESTOP : to end the simulation at this date (/year, month, day, hour/), also in case of a NETCDF forcing file. hour is expressed in seconds.
+	\item XTSTEP\_SURF: surface time step .
+	\item XTSTEP\_OUTPUT: time step of the output time series .
+	\item XDELTA\_OROG: maximum difference allowed between forcing and surface file orographies if LSET\_FORC\_ZS=.F. (m) used in classical offline mode (size of openMP packets, domain sizes)
+	\item XIO\_FRAC : the I/O processor/thread will be affected XIO\_FRAC * number of points affected to other processors/threads.
+\end{itemize}
+
+%\newpage
+\subsubsection{Namelist NAM\_LAND\_USE}
+This namelist is needed when LLAND\_USE = .TRUE. (NAM\_IO\_OFFLINE). The file referenced in this namelist has to be formatted as a Surfex PREP file and to contain at least 13 record: DIM\_FULL, VEGTYPE\_P1, .... VEGTYPE\_P12. If CFTYP\_VEGTYPE = 'OFFLIN', the file is a NETCDF file and its name needs to be PARAMS.nc.
+
+\scalebox{1.}{
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Name                     &   Type           &      Values                  &    Default  &  X-Reference    \\
+\hline
+CFNAM\_VEGTYPE           & string (28 chrs) &                              &             &                 \\
+\hline
+CFTYP\_VEGTYPE           & string (6 chrs)  &     "FA", "ASCII", "LFI"     &             &                 \\
+                         &                  &     "NC", "OFFLIN"           &             &                 \\
+\hline
+\end{tabular}
+}
+
+%\newpage
+\subsubsection{Namelist NAM\_ZS\_FILTER}
+
+\scalebox{1.}{
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Name                     &   Type           &      Values                  &    Default  &  X-Reference    \\
+\hline
+NZSFILTER                & integer          &                              &    1        &                 \\
+\hline
+\end{tabular}
+}
+
+\begin{itemize}
+	\item NZSFILTER: number of iterations of the spatial filter applied to smooth the orography. 1 iteration removes the 2 $\Delta x$ signal, 50\% of the 4 $\Delta x$ signal, 25\% of the 6 $\Delta x$ signal, etc.
+\end{itemize}
+
+%\newpage
+\subsubsection{Namelist NAM\_NACVEG}
+
+Namelist used to define the keys for ISBA 2d-variational analysis.
+
+\scalebox{1.}{
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Name                     &   Type        & Values &  Default  &  X-Reference    \\
+\hline
+NECHGU                   & integer       &        &    6      & \\
+\hline
+RCLIMCA                  & real          &        &    0.     & \\
+\hline
+RCLISST                  & real          &        &    0.05   & \\
+\hline
+SIGH2M0                  & real          &        &    0.1    & \\
+\hline
+SIGT2M0                  & real          &        &    1.0    & \\
+\hline
+SIGWG0                   & real          &        &           & \\
+\hline
+SIGWGB                   & real          &        &    0.06   & \\
+\hline
+SIGW2B                   & real          &        &    0.03   & \\
+\hline
+LOBSWG                   & logical       &        &           & \\
+\hline
+LOBS2M                   & logical       &        &    F      & \\
+\hline
+LIMVEG                   & logical       &        &    T      & \\
+\hline
+SPRECIP2                 & real          &        &    4.0    & \\
+\hline
+RTHR\_QC                 & real          &        &    3.0    & \\
+\hline
+SIGWG0\_MAX              & real          &        &    6.0    & \\
+\hline
+RSCAL\_JAC               & real          &        &    4.0    & \\
+\hline
+LPRINT                   & logical       &        &    T      & \\
+\hline
+LAROME                   & logical       &        &    T      & \\
+\hline
+\end{tabular}
+}
+
+%\newpage
+\subsection{Using SURFEX in Meso-NH}
+In this case, Meso-NH FM files are used. The parallelization of the surface fields is done during the
+reading or writing of the fields by the FMREAD and FMWRIT routines. Files are produced in LFI
+format. Since version 5.2, NETCDF format is also allowed in Meso-NH.
+
+%\newpage
+\subsubsection{Initialization of surface fields integrated in Meso-NH programs}
+In Meso-NH, there are usually 2 ways to produce initial files, depending if you want to use real or
+ideal atmospheric conditions. However, from the surface point of view, there is no difference
+between these 2 main possibilities of fields (real -e.g. from operationnal surface scheme in an
+operationnal model- or ideal -e.g. uniform-), whatever the treatment done for the atmospheric fields.
+This is allowed because the same externalized routines corresponding to PGD and PREP are used:
+In the case of realistic atmospheric fields, the Meso-NH programs calling the surface are:
+\begin{enumerate}
+	\item PREP\_PGD : it uses the PGD facility of the surface
+	\item PREP\_NEST\_PGD : surface fields are only read and rewritten, except the orography that is
+modified (the modification of the orography itself is considered as an atmospheric model
+routine, as orography is also a field of the atmospheric model).
+	\item PREP\_REAL\_CASE : it uses the PREP facility of the surface, that can produce either ideal
+or realistic surface fields.
+	\item SPAWNING : it does not produce surface fields any more. The surface fields will be
+recreated during the PREP\_REAL\_CASE step following the SPAWNING.
+\end{enumerate}
+In the case of ideal atmospheric fields, the Meso-NH program calling the surface is \\ PREP\_IDEAL\_CASE : it uses both the PGD and PREP facilities of the surface. Ideal or realistic (the latter only in conformal projection) physiographic fields can be either produced or read from a file. Then the prognostic surface variables, either ideal or realistic, can be computed by PREP.
+If you use Meso-NH atmospheric model, the input and output surface files are the same as the atmospheric ones, so there is no need to specify via surface namelists any information about the input or output file names.
+
+%\newpage
+\subsubsection{Namelist NAM\_PGDFILE}
+
+Note however that, in PREP\_PGD (just before the call to the surface physiographic computation in PGD, for which the namelists are described in the next chapter), there is a namelist to define the output physiographic file:
+
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Name                     &   Type              & Values &  Default  &  X-Reference    \\
+\hline
+CPGDFILE                 & string (28 chrs)    &        &           & \\
+\hline
+NHALO                    & integer             &        &  15       & \\
+\hline
+\end{tabular}
+
+%\newpage
+\subsubsection{Using SURFEX in AROME}
+à garder?
