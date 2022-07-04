@@ -1,3 +1,4 @@
+# compilation of the scientific documentation
 pdflatex surfex_scidoc
 bibtex chapitre_0_introduction
 bibtex chapitre_1_surface_eau
@@ -10,23 +11,14 @@ bibtex chapitre_8_surface_analysis
 bibtex surfex_scidoc
 pdflatex surfex_scidoc
 pdflatex surfex_scidoc
-#dvips surfex_scidoc.dvi -o surfex_scidoc.ps
-echo "==========================================="
-grep -i undefined surfex_scidoc.log
-echo "==========================================="
-grep -i warning surfex_scidoc.log
-echo "==========================================="
 
-#ps2pdf surfex_scidoc.ps
-#rm surfex_scidoc.ps
-
-# clean up LaTeX residue...
-
+# compilation of the technical documentation
 pdflatex surfex_tecdoc
 pdflatex surfex_tecdoc
 
+# check undefined references and possible warnings
+grep -i undefined surfex_scidoc.log  > scidoc_undefined.txt 2>&1
+grep -i warning surfex_scidoc.log  > scidoc_warning.txt 2>&1
+
+# clean up directory
 \rm -f *.log *.aux *.toc *.dvi *.blg *.bbl *.mt* *.maf *.out
-
-ISSUE="3"
-VERSION="v8.1"
-
