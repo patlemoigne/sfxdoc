@@ -4,20 +4,14 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{lscape}
 \usepackage{textcomp}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{multicol}
 \usepackage{multirow}
 \usepackage{fancyhdr}
 \usepackage{colordvi}
 \usepackage{graphicx}
 \usepackage{supertabular}
-%
-%\usepackage{amsmath,amssymb,float}
-%AAB to be able to use certain amsmath features
 \usepackage{amsmath}
-%AAB to be able to use \mathsrc font:
 \usepackage{mathrsfs}
-%
 \usepackage{afterpage}
 \usepackage{float}
 \usepackage{subfigure}
@@ -26,38 +20,23 @@
 \bibliographystyle{plain}
 \usepackage[sectionbib]{chapterbib}
 %====================
-%numerotation des ligne pour relecture
-%\usepackage[left,modulo]{lineno}
-%\linenumbers
-%\usepackage{url}
-%\usepackage{apalike}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\newcommand{\etal}{{et al.\ }}
 \newcommand{\eg}{{e.g.\ }}
 \newcommand{\ie}{{i.e.\ }}
 \newcommand{\para}{ }
 \newcommand{\pa}{\\}
 \newcommand{\tabline}{\hline}
-%\newcommand{\cta}[2]{{\it{#1}}~(#2)}
 \newcommand{\cta}[2]{#1~(#2)}
 \newcommand{\ctb}[2]{({\it{#1}}~(#2))}
 \newcommand{\ctc}[4]{({\it{#1}}~(#2),~{\it{#3}}~(#4))}
 \newcommand{\ctd}[6]{({\it{#1}}~(#2),~{\it{#3}}~(#4),~{\it{#5}}~(#6))}
 \newcommand{\cte}[8]{({\it{#1}}~(#2),~{\it{#3}}~(#4),~{\it{#5}}~(#6),~{\it{#7}}~(#8))}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \renewcommand{\baselinestretch}{1.1}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%\DeclareUnicodeCharacter{2212}{*************************************}
 
 \begin{document}
 \title{SURFEX SCIENTIFIC\\ DOCUMENTATION}
 \author{P. Le Moigne}
-%\date{March 17, 2009}
 \maketitle
-%\dominitoc
 
-%---------------------------------
 {\large{~ \\ \\ \\ 
 EDITOR :  Patrick Le Moigne \\ \\
 
@@ -129,7 +108,7 @@ $^{(5)}$ : KNMI, The Netherlands
 \newpage
 \begin{tabular}{|c|c|c|c|c|}
 \hline
-ISSUE No       &   &      DATE           &      PAGES      &         DESCRIPTION OF CHANGE                        \\
+ISSUE No       &   &      DATE           &      PAGES      &         DESCRIPTION OF CHANGES                       \\
 \hline
    1           & V5.0  &      May 2009       &      1 - 211    &         Original                                 \\
 \hline
@@ -151,24 +130,18 @@ ISSUE No       &   &      DATE           &      PAGES      &         DESCRIPTION
 \dominitoc
 \tableofcontents
 
-\part{SURFACE PROCESSES SCHEME}
-\include{chapitre_0_introduction}
-\include{chapitre_1_surface_eau}
-\include{chapitre_2_surface_urbaine}
-\include{chapitre_3_surface_nature}
-\include{chapitre_4_modele_cls}
-\include{chapitre_5_chimie_aerosol}
+\part{SURFACE PROCESSES}
+\include{chapter_0_introduction}
+\include{chapter_1_water_surfaces}
+\include{chapter_2_urban_surfaces}
+\include{chapter_3_nature_surfaces}
+\include{chapter_4_surface_boundary_layer}
+\include{chapter_5_chemistry_aerosol}
 
-\part{LAND COVER: ECOCLIMAP}
-\include{chapitre_7_ecoclimap}
+\part{LAND COVER}
+\include{chapter_7_ecoclimap_description}
 
-\part{LAND SURFACE ANALYSIS}
-\include{chapitre_8_surface_analysis}
-
-%\part{User Guide}
-%\include{section_01}
-%======================
-%\bibliography{surfex_scidoc}
-%======================
+\part{SURFACE ANALYSIS}
+\include{chapter_8_surface_analysis}
 
 \end{document}
